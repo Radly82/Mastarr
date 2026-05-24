@@ -14,3 +14,4 @@ launch.vbs
 *.blockmap
 builder-debug.yml
 win-unpacked/
+MastARR.exe.WebView2/
