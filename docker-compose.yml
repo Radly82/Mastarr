@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  mastarr:
+    build: .
+    container_name: mastarr
+    ports:
+      - "8686:80"
+    restart: unless-stopped

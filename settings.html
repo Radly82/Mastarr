@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Starr MastARR</title>
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-tertiary: #1a1a1a;
+            --text-primary: #e0e0e0;
+            --text-secondary: rgba(224, 224, 224, 0.6);
+            --accent-sonarr: #00d4ff;
+            --accent-radarr: #7b2cbf;
+            --accent-sabnzbd: #ff6b6b;
+            --border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, var(--accent-sonarr), var(--accent-radarr));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .back-button {
+            display: inline-block;
+            margin-bottom: 2rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .back-button:hover {
+            background: var(--bg-tertiary);
+            border-color: var(--accent-sonarr);
+        }
+
+        .settings-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        .settings-section h2 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .settings-section.sonarr h2 {
+            color: var(--accent-sonarr);
+        }
+
+        .settings-section.radarr h2 {
+            color: var(--accent-radarr);
+        }
+
+        .settings-section.sabnzbd h2 {
+            color: var(--accent-sabnzbd);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-sonarr);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .save-button {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(90deg, var(--accent-sonarr), var(--accent-radarr));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .save-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .save-button:active {
+            transform: translateY(0);
+        }
+
+        .success-message {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            color: #4caf50;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-button">← Back to Main</a>
+        
+        <h1>Settings</h1>
+        
+        <div class="success-message" id="successMessage">Settings saved successfully!</div>
+        
+        <div class="settings-section sonarr">
+            <h2>📺 Sonarr Settings</h2>
+            <div class="form-group">
+                <label for="sonarrUrl">Sonarr URL</label>
+                <input type="text" id="sonarrUrl" placeholder="Enter Sonarr URL" />
+            </div>
+            <div class="form-group">
+                <label for="sonarrApiKey">Sonarr API Key</label>
+                <input type="password" id="sonarrApiKey" placeholder="Enter API key" />
+            </div>
+        </div>
+        
+        <div class="settings-section radarr">
+            <h2>🎬 Radarr Settings</h2>
+            <div class="form-group">
+                <label for="radarrUrl">Radarr URL</label>
+                <input type="text" id="radarrUrl" placeholder="Enter Radarr URL" />
+            </div>
+            <div class="form-group">
+                <label for="radarrApiKey">Radarr API Key</label>
+                <input type="password" id="radarrApiKey" placeholder="Enter API key" />
+            </div>
+        </div>
+        
+        <div class="settings-section sabnzbd">
+            <h2>📥 Sabnzbd Settings</h2>
+            <div class="form-group">
+                <label for="sabnzbdUrl">Sabnzbd URL</label>
+                <input type="text" id="sabnzbdUrl" placeholder="Enter Sabnzbd URL" />
+            </div>
+            <div class="form-group">
+                <label for="sabnzbdApiKey">Sabnzbd API Key</label>
+                <input type="password" id="sabnzbdApiKey" placeholder="Enter API key" />
+            </div>
+        </div>
+        
+        <button class="save-button" onclick="saveSettings()">Save Settings</button>
+    </div>
+
+    <script>
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            
+            document.getElementById('sonarrUrl').value = settings.sonarrUrl || '';
+            document.getElementById('sonarrApiKey').value = settings.sonarrApiKey || '';
+            document.getElementById('radarrUrl').value = settings.radarrUrl || '';
+            document.getElementById('radarrApiKey').value = settings.radarrApiKey || '';
+            document.getElementById('sabnzbdUrl').value = settings.sabnzbdUrl || '';
+            document.getElementById('sabnzbdApiKey').value = settings.sabnzbdApiKey || '';
+        }
+
+        function saveSettings() {
+            const settings = {
+                sonarrUrl: document.getElementById('sonarrUrl').value,
+                sonarrApiKey: document.getElementById('sonarrApiKey').value,
+                radarrUrl: document.getElementById('radarrUrl').value,
+                radarrApiKey: document.getElementById('radarrApiKey').value,
+                sabnzbdUrl: document.getElementById('sabnzbdUrl').value,
+                sabnzbdApiKey: document.getElementById('sabnzbdApiKey').value
+            };
+            
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+            
+            const successMessage = document.getElementById('successMessage');
+            successMessage.classList.add('show');
+            
+            setTimeout(() => {
+                successMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        // Load settings on page load
+        document.addEventListener('DOMContentLoaded', loadSettings);
+    </script>
+</body>
+</html>

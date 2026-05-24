@@ -1,0 +1,2101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radarr & Sonarr Search</title>
+    <link rel="icon" href="MA.png" type="image/png">
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-tertiary: #1a1a1a;
+            --text-primary: #e0e0e0;
+            --text-secondary: rgba(224, 224, 224, 0.6);
+            --accent-sonarr: #00d4ff;
+            --accent-radarr: #7b2cbf;
+            --border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        [data-theme="blue"] {
+            --bg-primary: #0a1929;
+            --bg-secondary: #102a43;
+            --bg-tertiary: #15395b;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-sonarr: #00bcd4;
+            --accent-radarr: #3f51b5;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="green"] {
+            --bg-primary: #0d1f0d;
+            --bg-secondary: #1a2f1a;
+            --bg-tertiary: #243a24;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-sonarr: #4caf50;
+            --accent-radarr: #2e7d32;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="80s"] {
+            --bg-primary: #1a0a2e;
+            --bg-secondary: #2d1b4e;
+            --bg-tertiary: #402470;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --accent-sonarr: #ff00ff;
+            --accent-radarr: #00ffff;
+            --border-color: rgba(255, 0, 255, 0.3);
+        }
+
+        [data-theme="theatre"] {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --text-primary: #ffd700;
+            --text-secondary: rgba(255, 215, 0, 0.7);
+            --accent-sonarr: #c41e3a;
+            --accent-radarr: #8b0000;
+            --border-color: rgba(255, 215, 0, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            padding: 2rem;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .theme-selector {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 100;
+        }
+
+        .theme-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.3s ease;
+            padding: 8px;
+        }
+
+        .theme-button:hover .dot {
+            color: var(--accent-sonarr);
+        }
+
+        .theme-button .dot {
+            font-size: 10px;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .theme-dropdown {
+            position: absolute;
+            top: 50px;
+            left: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.5rem;
+            min-width: 150px;
+            display: none;
+            flex-direction: column;
+            gap: 0.25rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .theme-dropdown.active {
+            display: flex;
+        }
+
+        .theme-option {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.675rem;
+            color: #ffffff !important;
+        }
+
+        .theme-option:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .theme-option.selected {
+            background: var(--bg-tertiary);
+        }
+
+        .menu-item {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.675rem;
+            color: #ffffff !important;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .submenu-arrow {
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-item.active .submenu-arrow {
+            transform: rotate(90deg);
+        }
+
+        .submenu {
+            display: none;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding-left: 1rem;
+            margin-top: 0.25rem;
+            border-left: 2px solid var(--border-color);
+        }
+
+        .submenu.active {
+            display: flex;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, var(--accent-sonarr), var(--accent-radarr));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .search-container {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            font-size: 1.1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-sonarr);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-secondary);
+        }
+
+        button {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--accent-sonarr), var(--accent-radarr));
+            color: #fff;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 212, 255, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .results-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .results-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .service-icon {
+            width: 32px;
+            height: 32px;
+        }
+
+        .sonarr-header {
+            color: var(--accent-sonarr);
+        }
+
+        .radarr-header {
+            color: var(--accent-radarr);
+        }
+
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .result-item {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .result-item:hover {
+            background: var(--bg-secondary);
+            transform: translateX(5px);
+        }
+
+        .download-btn {
+            margin-top: 0.75rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, var(--accent-sonarr), #0099cc);
+            color: #fff;
+            width: 100%;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .download-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .download-btn.radarr {
+            background: linear-gradient(135deg, var(--accent-radarr), #9d4edd);
+        }
+
+        .download-btn.radarr:hover {
+            box-shadow: 0 5px 15px rgba(123, 44, 191, 0.4);
+        }
+
+        .download-btn.success {
+            background: linear-gradient(135deg, #00c853, #00e676);
+        }
+
+        .download-btn.error {
+            background: linear-gradient(135deg, #ff5252, #ff1744);
+        }
+
+        .result-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-year {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .result-overview {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            line-height: 1.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .error {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 1rem;
+            color: #ff6b6b;
+            margin-bottom: 1rem;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .calendar-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .calendar-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .calendar-header:hover {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+
+        .collapse-icon {
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .calendar-header.collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .calendar-list.collapsed {
+            display: none;
+        }
+
+        .calendar-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .calendar-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .calendar-item {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            padding: 0.25rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .calendar-item:hover {
+            background: var(--bg-secondary);
+            transform: translateX(1.25px);
+        }
+
+        .calendar-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .calendar-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .calendar-episode {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .sabnzbd-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        .sabnzbd-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sabnzbd-header h2 {
+            font-size: 1.5rem;
+            color: #ff6b35;
+        }
+
+        .sabnzbd-header .refresh-info {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .sabnzbd-tabs {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .sabnzbd-tab {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .sabnzbd-tab:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-sabnzbd);
+        }
+
+        .sabnzbd-tab.active {
+            background: var(--accent-sabnzbd);
+            color: white;
+            border-color: var(--accent-sabnzbd);
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .pagination button {
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-sabnzbd);
+        }
+
+        .pagination button.active {
+            background: var(--accent-sabnzbd);
+            color: white;
+            border-color: var(--accent-sabnzbd);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-ellipsis {
+            padding: 0.5rem 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .download-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-sonarr);
+        }
+
+        .download-item {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .download-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .download-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .progress-container {
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b35, #ff8c42);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .download-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .download-eta {
+            color: #ff6b35;
+            font-weight: 600;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--border-color);
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-tertiary);
+            transform: rotate(90deg);
+        }
+
+        .modal-cover {
+            width: 200px;
+            height: 300px;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            object-fit: cover;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .modal-year {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .modal-overview {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-library-status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .modal-library-status.in-library {
+            background: linear-gradient(135deg, #00c853, #00e676);
+            color: white;
+        }
+
+        .modal-library-status.not-in-library {
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        #modalDownloadBtn {
+            margin-top: 1rem;
+        }
+
+        .modal-directory-section {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .modal-directory-section label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .directory-select {
+            width: 100%;
+            padding: 0.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .directory-select:hover {
+            border-color: var(--accent-sonarr);
+        }
+
+        .directory-select:focus {
+            outline: none;
+            border-color: var(--accent-sonarr);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .main-logo {
+            max-width: 200px;
+            width: 100%;
+            height: auto;
+            margin: 0 auto 2rem auto;
+            display: block;
+            opacity: 1;
+            mix-blend-mode: multiply;
+            filter: brightness(1.2) contrast(1.1);
+            transition: opacity 0.3s ease, filter 0.3s ease;
+        }
+
+        .main-logo:hover {
+            filter: brightness(1.3) contrast(1.2);
+        }
+
+        .result-item {
+            cursor: pointer;
+        }
+
+        .result-item:hover {
+            background: var(--bg-secondary);
+            transform: translateX(5px);
+        }
+
+        @media (max-width: 768px) {
+            .results-container {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="theme-selector">
+            <button class="theme-button" onclick="toggleMainDropdown()" aria-label="Menu">
+                <span class="dot">•</span>
+                <span class="dot">•</span>
+                <span class="dot">•</span>
+            </button>
+            <div class="theme-dropdown" id="mainDropdown">
+                <div class="menu-item" onclick="toggleSubmenu('themesSubmenu')">
+                    Themes <span class="submenu-arrow">▶</span>
+                </div>
+                <div class="submenu" id="themesSubmenu">
+                    <div class="theme-option" onclick="changeTheme('dark')" data-theme="dark">Dark Mode</div>
+                    <div class="theme-option" onclick="changeTheme('blue')" data-theme="blue">Blue Theme</div>
+                    <div class="theme-option" onclick="changeTheme('green')" data-theme="green">Green Theme</div>
+                    <div class="theme-option" onclick="changeTheme('80s')" data-theme="80s">80's Theme</div>
+                    <div class="theme-option" onclick="changeTheme('theatre')" data-theme="theatre">Theatre Theme</div>
+                </div>
+                <div class="menu-item" onclick="window.location.href='settings.html'">
+                    Settings
+                </div>
+                <div class="menu-item" onclick="window.location.href='about.html'">
+                    About
+                </div>
+            </div>
+        </div>
+        
+        <img src="MA.png" alt="Logo" class="main-logo" />
+        
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search for Movies or Series..." />
+                <button id="searchBtn" onclick="searchBoth()">Search</button>
+            </div>
+            <div id="errorContainer"></div>
+        </div>
+
+        <div class="sabnzbd-section">
+            <div class="sabnzbd-header">
+                <div class="sabnzbd-tabs">
+                    <div class="sabnzbd-tab active" onclick="switchSabnzbdTab('progress')">Download progress</div>
+                    <div class="sabnzbd-tab" onclick="switchSabnzbdTab('history')">History</div>
+                </div>
+            </div>
+            <div id="sabnzbdProgress">
+                <div class="loading">Loading downloads...</div>
+            </div>
+            <div id="sabnzbdHistory" style="display: none;">
+                <div class="loading">Loading history...</div>
+            </div>
+        </div>
+
+        <div class="calendar-container">
+            <div class="calendar-section">
+                <div class="calendar-header sonarr-header collapsed" onclick="toggleCalendar('sonarrCalendar')">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <img src="https://raw.githubusercontent.com/Sonarr/Sonarr/develop/Logo/Sonarr.svg" alt="Sonarr" class="service-icon" />
+                        <h2>Series Calendar</h2>
+                    </div>
+                    <span class="collapse-icon">▼</span>
+                </div>
+                <div id="sonarrCalendar" class="calendar-list collapsed">
+                    <div class="loading">Loading calendar...</div>
+                </div>
+            </div>
+
+            <div class="calendar-section">
+                <div class="calendar-header radarr-header collapsed" onclick="toggleCalendar('radarrCalendar')">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <img src="https://raw.githubusercontent.com/Radarr/Radarr/develop/Logo/Radarr.svg" alt="Radarr" class="service-icon" />
+                        <h2>Movie Calendar</h2>
+                    </div>
+                    <span class="collapse-icon">▼</span>
+                </div>
+                <div id="radarrCalendar" class="calendar-list collapsed">
+                    <div class="loading">Loading calendar...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-container">
+            <div class="results-section">
+                <div class="results-header sonarr-header">
+                    <img src="https://raw.githubusercontent.com/Sonarr/Sonarr/develop/Logo/Sonarr.svg" alt="Sonarr" class="service-icon" />
+                    <h2>Series</h2>
+                </div>
+                <div id="sonarrResults" class="results-list">
+                    <div class="no-results">Search for TV shows to see results here</div>
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div class="results-header radarr-header">
+                    <img src="https://raw.githubusercontent.com/Radarr/Radarr/develop/Logo/Radarr.svg" alt="Radarr" class="service-icon" />
+                    <h2>Movies</h2>
+                </div>
+                <div id="radarrResults" class="results-list">
+                    <div class="no-results">Search for movies to see results here</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="coverModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <img id="modalCover" class="modal-cover" src="" alt="Cover Art" />
+            <h2 id="modalTitle" class="modal-title"></h2>
+            <div id="modalYear" class="modal-year"></div>
+            <div id="modalLibraryStatus" class="modal-library-status"></div>
+            <div id="modalOverview" class="modal-overview"></div>
+            <div class="modal-directory-section">
+                <label for="directorySelect">Download to:</label>
+                <select id="directorySelect" class="directory-select">
+                    <option value="">Loading directories...</option>
+                </select>
+            </div>
+            <button id="modalDownloadBtn" class="download-btn" onclick="modalDownload()">Add to Library</button>
+        </div>
+    </div>
+
+    <script>
+        // Load settings from localStorage or use defaults
+        function loadConfig() {
+            const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            
+            return {
+                sonarr: {
+                    url: settings.sonarrUrl || '',
+                    apiKey: settings.sonarrApiKey || ''
+                },
+                radarr: {
+                    url: settings.radarrUrl || '',
+                    apiKey: settings.radarrApiKey || ''
+                },
+                sabnzbd: {
+                    url: settings.sabnzbdUrl || '',
+                    apiKey: settings.sabnzbdApiKey || ''
+                }
+            };
+        }
+
+        const config = loadConfig();
+
+        const SONARR_CONFIG = {
+            url: config.sonarr.url,
+            apiKey: config.sonarr.apiKey
+        };
+
+        const RADARR_CONFIG = {
+            url: config.radarr.url,
+            apiKey: config.radarr.apiKey
+        };
+
+        const SABNZBD_CONFIG = {
+            url: config.sabnzbd.url,
+            apiKey: config.sabnzbd.apiKey
+        };
+
+        // Theme switching functionality
+        function changeTheme(theme) {
+            const html = document.documentElement;
+            
+            // Remove all theme attributes
+            html.removeAttribute('data-theme');
+            
+            // Set the selected theme
+            if (theme !== 'dark') {
+                html.setAttribute('data-theme', theme);
+            }
+            
+            // Save preference to localStorage
+            localStorage.setItem('theme', theme);
+            
+            // Update selected state
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.theme === theme) {
+                    option.classList.add('selected');
+                }
+            });
+            
+            // Close dropdown
+            document.getElementById('mainDropdown').classList.remove('active');
+        }
+        
+        function toggleMainDropdown() {
+            const dropdown = document.getElementById('mainDropdown');
+            dropdown.classList.toggle('active');
+        }
+        
+        function toggleSubmenu(submenuId) {
+            const submenu = document.getElementById(submenuId);
+            const menuItem = submenu.previousElementSibling;
+            
+            // Close other submenus
+            document.querySelectorAll('.submenu').forEach(sm => {
+                if (sm.id !== submenuId) {
+                    sm.classList.remove('active');
+                    sm.previousElementSibling.classList.remove('active');
+                }
+            });
+            
+            // Toggle current submenu
+            submenu.classList.toggle('active');
+            menuItem.classList.toggle('active');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const themeSelector = document.querySelector('.theme-selector');
+            if (!themeSelector.contains(e.target)) {
+                document.getElementById('mainDropdown').classList.remove('active');
+                document.querySelectorAll('.submenu').forEach(sm => sm.classList.remove('active'));
+                document.querySelectorAll('.menu-item').forEach(mi => mi.classList.remove('active'));
+            }
+        });
+
+        // Load saved theme on page load
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+            
+            // Remove all theme attributes
+            html.removeAttribute('data-theme');
+            
+            // Set the selected theme
+            if (savedTheme !== 'dark') {
+                html.setAttribute('data-theme', savedTheme);
+            }
+            
+            // Update selected state
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.theme === savedTheme) {
+                    option.classList.add('selected');
+                }
+            });
+        }
+
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', loadTheme);
+
+        // Calendar functions
+        async function fetchSonarrCalendar() {
+            try {
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                
+                const response = await fetch(
+                    `${SONARR_CONFIG.url}/api/v3/calendar?start=${startOfMonth.toISOString()}&end=${endOfMonth.toISOString()}&apiKey=${SONARR_CONFIG.apiKey}`
+                );
+                if (!response.ok) throw new Error('Sonarr calendar API error');
+                return await response.json();
+            } catch (error) {
+                console.error('Sonarr calendar error:', error);
+                throw error;
+            }
+        }
+
+        async function fetchRadarrCalendar() {
+            try {
+                const now = new Date();
+                const startDate = now;
+                const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+                
+                const response = await fetch(
+                    `${RADARR_CONFIG.url}/api/v3/calendar?start=${startDate.toISOString()}&end=${endDate.toISOString()}&apiKey=${RADARR_CONFIG.apiKey}`
+                );
+                if (!response.ok) throw new Error('Radarr calendar API error');
+                return await response.json();
+            } catch (error) {
+                console.error('Radarr calendar error:', error);
+                throw error;
+            }
+        }
+
+        async function displaySonarrCalendar(items) {
+            const container = document.getElementById('sonarrCalendar');
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="no-results">No upcoming episodes</div>';
+                return;
+            }
+
+            // Filter out episodes that already have files (already downloaded)
+            const upcomingEpisodes = items.filter(item => !item.hasFile);
+            
+            if (upcomingEpisodes.length === 0) {
+                container.innerHTML = '<div class="no-results">No upcoming episodes</div>';
+                return;
+            }
+
+            // Fetch series information for each unique seriesId
+            const seriesIds = [...new Set(upcomingEpisodes.map(item => item.seriesId))];
+            const seriesMap = new Map();
+            
+            for (const seriesId of seriesIds) {
+                try {
+                    const response = await fetch(
+                        `${SONARR_CONFIG.url}/api/v3/series/${seriesId}?apiKey=${SONARR_CONFIG.apiKey}`
+                    );
+                    if (response.ok) {
+                        const series = await response.json();
+                        seriesMap.set(seriesId, series.title);
+                    }
+                } catch (error) {
+                    console.error('Error fetching series:', error);
+                }
+            }
+
+            container.innerHTML = upcomingEpisodes.map(item => {
+                const seriesTitle = seriesMap.get(item.seriesId) || 'Unknown';
+                const airDate = item.airDateUtc || item.airDate;
+                const dateStr = airDate ? new Date(airDate).toLocaleString() : 'Unknown date';
+                const episodeTitle = item.title || 'Unknown';
+
+                return `
+                    <div class="calendar-item">
+                        <div class="calendar-date">${dateStr}</div>
+                        <div class="calendar-title">${seriesTitle}</div>
+                        <div class="calendar-episode">${episodeTitle}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function displayRadarrCalendar(items) {
+            const container = document.getElementById('radarrCalendar');
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="no-results">No upcoming movies</div>';
+                return;
+            }
+
+            // Fetch existing movies from library to filter out
+            try {
+                const existingMovies = await fetch(`${RADARR_CONFIG.url}/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`).then(r => r.json());
+                const existingMovieIds = new Set(existingMovies.map(m => m.tmdbId));
+                
+                // Filter out movies that are already in the library
+                const upcomingMovies = items.filter(item => !existingMovieIds.has(item.tmdbId));
+                
+                if (upcomingMovies.length === 0) {
+                    container.innerHTML = '<div class="no-results">No upcoming movies</div>';
+                    return;
+                }
+
+                container.innerHTML = upcomingMovies.map(item => {
+                    const title = item.title || 'Unknown';
+                    const releaseDate = item.inCinemas || item.digitalRelease || item.physicalRelease;
+                    const dateStr = releaseDate ? new Date(releaseDate).toLocaleDateString() : 'Unknown date';
+                    const year = item.year || 'Unknown';
+
+                    return `
+                        <div class="calendar-item">
+                            <div class="calendar-date">${dateStr}</div>
+                            <div class="calendar-title">${title}</div>
+                            <div class="calendar-episode">${year}</div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error filtering movies:', error);
+                // If filtering fails, show all items
+                container.innerHTML = items.map(item => {
+                    const title = item.title || 'Unknown';
+                    const releaseDate = item.inCinemas || item.digitalRelease || item.physicalRelease;
+                    const dateStr = releaseDate ? new Date(releaseDate).toLocaleDateString() : 'Unknown date';
+                    const year = item.year || 'Unknown';
+
+                    return `
+                        <div class="calendar-item">
+                            <div class="calendar-date">${dateStr}</div>
+                            <div class="calendar-title">${title}</div>
+                            <div class="calendar-episode">${year}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        async function loadCalendars() {
+            try {
+                const [sonarrCalendar, radarrCalendar] = await Promise.allSettled([
+                    fetchSonarrCalendar(),
+                    fetchRadarrCalendar()
+                ]);
+
+                if (sonarrCalendar.status === 'fulfilled') {
+                    await displaySonarrCalendar(sonarrCalendar.value);
+                } else {
+                    document.getElementById('sonarrCalendar').innerHTML = '<div class="error">Failed to load Sonarr calendar</div>';
+                }
+
+                if (radarrCalendar.status === 'fulfilled') {
+                    await displayRadarrCalendar(radarrCalendar.value);
+                } else {
+                    document.getElementById('radarrCalendar').innerHTML = '<div class="error">Failed to load Radarr calendar</div>';
+                }
+            } catch (error) {
+                console.error('Error loading calendars:', error);
+            }
+        }
+
+        // Load calendars on page load
+        document.addEventListener('DOMContentLoaded', loadCalendars);
+
+        function toggleCalendar(calendarId) {
+            const calendarList = document.getElementById(calendarId);
+            const header = calendarList.previousElementSibling;
+            
+            calendarList.classList.toggle('collapsed');
+            header.classList.toggle('collapsed');
+        }
+
+        async function searchSonarr(query) {
+            try {
+                const response = await fetch(
+                    `${SONARR_CONFIG.url}/api/v3/series/lookup?term=${encodeURIComponent(query)}&apiKey=${SONARR_CONFIG.apiKey}`
+                );
+                if (!response.ok) throw new Error('Sonarr API error');
+                return await response.json();
+            } catch (error) {
+                console.error('Sonarr search error:', error);
+                throw error;
+            }
+        }
+
+        async function searchRadarr(query) {
+            try {
+                const response = await fetch(
+                    `${RADARR_CONFIG.url}/api/v3/movie/lookup?term=${encodeURIComponent(query)}&apiKey=${RADARR_CONFIG.apiKey}`
+                );
+                if (!response.ok) throw new Error('Radarr API error');
+                return await response.json();
+            } catch (error) {
+                console.error('Radarr search error:', error);
+                throw error;
+            }
+        }
+
+        async function addSeries(series, customDirectory = null) {
+            const btn = document.querySelector(`[data-id="sonarr-${series.tvdbId || series.title}"]`);
+            if (!btn) return;
+            
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+
+            try {
+                console.log('Adding series:', series.title);
+                
+                // Check if series already exists in library
+                const existingSeries = await fetch(`${SONARR_CONFIG.url}/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`).then(r => r.json());
+                const existing = existingSeries.find(s => s.tvdbId === series.tvdbId);
+                
+                if (existing) {
+                    console.log('Series already in library:', existing.title);
+                    btn.textContent = 'Already in Library';
+                    btn.classList.add('error');
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = 'Add to Sonarr';
+                        btn.classList.remove('error');
+                    }, 2000);
+                    return;
+                }
+                
+                // First, fetch the root folders and quality profiles to get valid IDs
+                const [rootFolders, qualityProfiles] = await Promise.all([
+                    fetch(`${SONARR_CONFIG.url}/api/v3/rootfolder?apiKey=${SONARR_CONFIG.apiKey}`).then(r => r.json()),
+                    fetch(`${SONARR_CONFIG.url}/api/v3/qualityprofile?apiKey=${SONARR_CONFIG.apiKey}`).then(r => r.json())
+                ]);
+
+                console.log('Available root folders:', rootFolders);
+                console.log('Available quality profiles:', qualityProfiles);
+
+                // Use custom directory if provided, otherwise use first available
+                const rootFolder = customDirectory || rootFolders[0]?.path || '/tv';
+                const qualityProfileId = qualityProfiles[0]?.id || 1;
+
+                // Use the full series data from lookup and add required fields
+                const seriesData = {
+                    ...series,
+                    qualityProfileId: qualityProfileId,
+                    seasonFolder: true,
+                    monitored: true,
+                    rootFolderPath: rootFolder,
+                    addOptions: {
+                        searchForMissingEpisodes: true
+                    }
+                };
+
+                // Remove fields that shouldn't be sent when adding
+                delete seriesData.id;
+                delete seriesData.seasons;
+
+                console.log('Sending to Sonarr:', seriesData);
+
+                const response = await fetch(
+                    `${SONARR_CONFIG.url}/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(seriesData)
+                    }
+                );
+
+                console.log('Sonarr response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Sonarr error response:', errorText);
+                    
+                    // Check if error is because series already exists
+                    if (errorText.includes('already been added') || errorText.includes('SeriesExistsValidator')) {
+                        btn.textContent = 'Already in Library';
+                        btn.classList.add('error');
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.textContent = 'Add to Sonarr';
+                            btn.classList.remove('error');
+                        }, 2000);
+                        return;
+                    }
+                    
+                    throw new Error(`Failed to add series: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log('Sonarr success response: Series added successfully');
+
+                btn.textContent = 'Added! ✓';
+                btn.classList.add('success');
+            } catch (error) {
+                console.error('Add series error:', error);
+                btn.textContent = 'Failed - Try Again';
+                btn.classList.add('error');
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Add to Sonarr';
+                    btn.classList.remove('error');
+                }, 2000);
+            }
+        }
+
+        async function addMovie(movie, customDirectory = null) {
+            const btn = document.querySelector(`[data-id="radarr-${movie.tmdbId || movie.title}"]`);
+            if (!btn) return;
+            
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+
+            try {
+                console.log('Adding movie:', movie.title);
+                
+                // Check if movie already exists in library
+                const existingMovies = await fetch(`${RADARR_CONFIG.url}/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`).then(r => r.json());
+                const existingMovie = existingMovies.find(m => m.tmdbId === movie.tmdbId);
+                
+                if (existingMovie) {
+                    console.log('Movie already in library:', existingMovie.title);
+                    btn.textContent = 'Already in Library';
+                    btn.classList.add('error');
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = 'Add to Radarr';
+                        btn.classList.remove('error');
+                    }, 2000);
+                    return;
+                }
+                
+                // First, fetch the root folders and quality profiles to get valid IDs
+                const [rootFolders, qualityProfiles] = await Promise.all([
+                    fetch(`${RADARR_CONFIG.url}/api/v3/rootfolder?apiKey=${RADARR_CONFIG.apiKey}`).then(r => r.json()),
+                    fetch(`${RADARR_CONFIG.url}/api/v3/qualityprofile?apiKey=${RADARR_CONFIG.apiKey}`).then(r => r.json())
+                ]);
+
+                console.log('Available root folders:', rootFolders);
+                console.log('Available quality profiles:', qualityProfiles);
+
+                // Use custom directory if provided, otherwise use first available
+                const rootFolder = customDirectory || rootFolders[0]?.path || '/movies';
+                const qualityProfileId = qualityProfiles[0]?.id || 1;
+
+                // Use the full movie data from lookup and add required fields
+                const movieData = {
+                    ...movie,
+                    qualityProfileId: qualityProfileId,
+                    monitored: true,
+                    rootFolderPath: rootFolder,
+                    addOptions: {
+                        searchForMovie: true
+                    }
+                };
+
+                // Remove fields that shouldn't be sent when adding
+                delete movieData.id;
+                delete movieData.movieFile;
+                delete movieData.hasFile;
+
+                console.log('Sending to Radarr:', movieData);
+
+                const response = await fetch(
+                    `${RADARR_CONFIG.url}/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(movieData)
+                    }
+                );
+
+                console.log('Radarr response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Radarr error response:', errorText);
+                    
+                    // Check if error is because movie already exists
+                    if (errorText.includes('already been added') || errorText.includes('MovieExistsValidator')) {
+                        btn.textContent = 'Already in Library';
+                        btn.classList.add('error');
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.textContent = 'Add to Radarr';
+                            btn.classList.remove('error');
+                        }, 2000);
+                        return;
+                    }
+                    
+                    throw new Error(`Failed to add movie: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log('Radarr success response: Movie added successfully');
+
+                btn.textContent = 'Added! ✓';
+                btn.classList.add('success');
+            } catch (error) {
+                console.error('Add movie error:', error);
+                btn.textContent = 'Failed - Try Again';
+                btn.classList.add('error');
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Add to Radarr';
+                    btn.classList.remove('error');
+                }, 2000);
+            }
+        }
+
+        function displaySonarrResults(results) {
+            const container = document.getElementById('sonarrResults');
+            
+            if (!results || results.length === 0) {
+                container.innerHTML = '<div class="no-results">No TV shows found</div>';
+                return;
+            }
+
+            container.innerHTML = results.map(item => `
+                <div class="result-item" onclick="showCover(${JSON.stringify(item).replace(/"/g, '&quot;')}, 'sonarr')">
+                    <div class="result-title">${item.title || 'Unknown'}</div>
+                    <div class="result-year">${item.year ? `Year: ${item.year}` : ''} ${item.status ? `| Status: ${item.status}` : ''}</div>
+                    ${item.overview ? `<div class="result-overview">${item.overview.substring(0, 200)}${item.overview.length > 200 ? '...' : ''}</div>` : ''}
+                    <button class="download-btn" onclick="event.stopPropagation(); addSeries(${JSON.stringify(item).replace(/"/g, '&quot;')})" data-id="sonarr-${item.tvdbId || item.title}">Add to Sonarr</button>
+                </div>
+            `).join('');
+        }
+
+        function displayRadarrResults(results) {
+            const container = document.getElementById('radarrResults');
+            
+            if (!results || results.length === 0) {
+                container.innerHTML = '<div class="no-results">No movies found</div>';
+                return;
+            }
+
+            container.innerHTML = results.map(item => `
+                <div class="result-item" onclick="showCover(${JSON.stringify(item).replace(/"/g, '&quot;')}, 'radarr')">
+                    <div class="result-title">${item.title || 'Unknown'}</div>
+                    <div class="result-year">${item.year ? `Year: ${item.year}` : ''} ${item.status ? `| Status: ${item.status}` : ''}</div>
+                    ${item.overview ? `<div class="result-overview">${item.overview.substring(0, 200)}${item.overview.length > 200 ? '...' : ''}</div>` : ''}
+                    <button class="download-btn radarr" onclick="event.stopPropagation(); addMovie(${JSON.stringify(item).replace(/"/g, '&quot;')})" data-id="radarr-${item.tmdbId || item.title}">Add to Radarr</button>
+                </div>
+            `).join('');
+        }
+
+        function showError(message) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function clearError() {
+            document.getElementById('errorContainer').innerHTML = '';
+        }
+
+        async function searchBoth() {
+            const query = document.getElementById('searchInput').value.trim();
+            const searchBtn = document.getElementById('searchBtn');
+            
+            if (!query) {
+                showError('Please enter a search term');
+                return;
+            }
+
+            clearError();
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+
+            document.getElementById('sonarrResults').innerHTML = '<div class="loading">Searching Sonarr...</div>';
+            document.getElementById('radarrResults').innerHTML = '<div class="loading">Searching Radarr...</div>';
+
+            try {
+                const [sonarrResults, radarrResults] = await Promise.allSettled([
+                    searchSonarr(query),
+                    searchRadarr(query)
+                ]);
+
+                if (sonarrResults.status === 'fulfilled') {
+                    displaySonarrResults(sonarrResults.value);
+                } else {
+                    document.getElementById('sonarrResults').innerHTML = '<div class="error">Failed to search Sonarr. Make sure the service is running and accessible.</div>';
+                }
+
+                if (radarrResults.status === 'fulfilled') {
+                    displayRadarrResults(radarrResults.value);
+                } else {
+                    document.getElementById('radarrResults').innerHTML = '<div class="error">Failed to search Radarr. Make sure the service is running and accessible.</div>';
+                }
+
+            } catch (error) {
+                showError('An unexpected error occurred during search');
+                console.error(error);
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Search';
+            }
+        }
+
+        // Allow Enter key to trigger search
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchBoth();
+            }
+        });
+
+        // Modal functions for cover art
+        let currentModalItem = null;
+        let currentModalType = null;
+
+        async function checkLibraryStatus(item, type, statusElement, downloadBtn) {
+            try {
+                let isInLibrary = false;
+                
+                if (type === 'radarr' && item.tmdbId) {
+                    const movies = await fetch(`${RADARR_CONFIG.url}/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`).then(r => r.json());
+                    isInLibrary = movies.some(m => m.tmdbId === item.tmdbId);
+                } else if (type === 'sonarr' && item.tvdbId) {
+                    const series = await fetch(`${SONARR_CONFIG.url}/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`).then(r => r.json());
+                    isInLibrary = series.some(s => s.tvdbId === item.tvdbId);
+                }
+                
+                if (isInLibrary) {
+                    statusElement.textContent = '✓ In Library';
+                    statusElement.className = 'modal-library-status in-library';
+                    downloadBtn.style.display = 'none';
+                } else {
+                    statusElement.textContent = 'Not in Library';
+                    statusElement.className = 'modal-library-status not-in-library';
+                    downloadBtn.style.display = 'inline-block';
+                    
+                    // Style download button based on type
+                    downloadBtn.className = 'download-btn';
+                    if (type === 'radarr') {
+                        downloadBtn.classList.add('radarr');
+                    }
+                    downloadBtn.textContent = type === 'radarr' ? 'Add to Radarr' : 'Add to Sonarr';
+                }
+            } catch (error) {
+                console.error('Error checking library status:', error);
+                statusElement.textContent = 'Status Unknown';
+                statusElement.className = 'modal-library-status not-in-library';
+            }
+        }
+
+        async function showCover(item, type) {
+            console.log('Showing cover for item:', item.title);
+            console.log('Type:', type);
+
+            // Store current item and type for download button
+            currentModalItem = item;
+            currentModalType = type;
+
+            const modal = document.getElementById('coverModal');
+            const modalCover = document.getElementById('modalCover');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalYear = document.getElementById('modalYear');
+            const modalOverview = document.getElementById('modalOverview');
+            const modalDownloadBtn = document.getElementById('modalDownloadBtn');
+            const modalLibraryStatus = document.getElementById('modalLibraryStatus');
+            const directorySelect = document.getElementById('directorySelect');
+
+            // Set basic content first
+            modalTitle.textContent = item.title || 'Unknown';
+            modalYear.textContent = item.year ? `Year: ${item.year}` : '';
+            modalOverview.textContent = item.overview || 'No overview available';
+
+            // Fetch and populate root folders based on type
+            try {
+                const config = type === 'sonarr' ? SONARR_CONFIG : RADARR_CONFIG;
+                const response = await fetch(`${config.url}/api/v3/rootfolder?apiKey=${config.apiKey}`);
+                if (response.ok) {
+                    const rootFolders = await response.json();
+                    directorySelect.innerHTML = rootFolders.map(folder => 
+                        `<option value="${folder.path}">${folder.path}</option>`
+                    ).join('');
+                } else {
+                    directorySelect.innerHTML = '<option value="">Failed to load directories</option>';
+                }
+            } catch (error) {
+                console.error('Error fetching root folders:', error);
+                directorySelect.innerHTML = '<option value="">Failed to load directories</option>';
+            }
+
+            // Check if item is already in library and update status tag
+            checkLibraryStatus(item, type, modalLibraryStatus, modalDownloadBtn);
+
+            // Try to get poster from Sonarr/Radarr API using the ID
+            let coverUrl = '';
+            try {
+                if (type === 'sonarr' && item.tvdbId) {
+                    const response = await fetch(
+                        `${SONARR_CONFIG.url}/api/v3/series/lookup?term=tvdb:${item.tvdbId}&apiKey=${SONARR_CONFIG.apiKey}`
+                    );
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.length > 0 && data[0].poster) {
+                            coverUrl = data[0].poster;
+                            // Prepend Sonarr URL if it's a relative path
+                            if (coverUrl.startsWith('/')) {
+                                coverUrl = `${SONARR_CONFIG.url}${coverUrl}`;
+                            }
+                        } else if (data && data.length > 0 && data[0].images && data[0].images.length > 0) {
+                            coverUrl = data[0].images[0].url;
+                            // Prepend Sonarr URL if it's a relative path
+                            if (coverUrl.startsWith('/')) {
+                                coverUrl = `${SONARR_CONFIG.url}${coverUrl}`;
+                            }
+                        }
+                    }
+                } else if (type === 'radarr' && item.tmdbId) {
+                    const response = await fetch(
+                        `${RADARR_CONFIG.url}/api/v3/movie/lookup?term=tmdb:${item.tmdbId}&apiKey=${RADARR_CONFIG.apiKey}`
+                    );
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.length > 0 && data[0].poster) {
+                            coverUrl = data[0].poster;
+                            // Prepend Radarr URL if it's a relative path
+                            if (coverUrl.startsWith('/')) {
+                                coverUrl = `${RADARR_CONFIG.url}${coverUrl}`;
+                            }
+                        } else if (data && data.length > 0 && data[0].images && data[0].images.length > 0) {
+                            coverUrl = data[0].images[0].url;
+                            // Prepend Radarr URL if it's a relative path
+                            if (coverUrl.startsWith('/')) {
+                                coverUrl = `${RADARR_CONFIG.url}${coverUrl}`;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching poster:', error);
+            }
+
+            // Fallback to TVDB artwork URL
+            if (!coverUrl && item.tvdbId) {
+                coverUrl = `https://artworks.thetvdb.com/banners/posters/${item.tvdbId}-1.jpg`;
+            }
+
+            // Set modal content with error handling
+            modalCover.onerror = function() {
+                console.error('Image failed to load');
+                this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"><rect fill="%231a1a2e" width="400" height="600"/><text x="50%" y="50%" fill="%23ffffff" font-size="24" text-anchor="middle" dy=".3em">No Cover Art</text></svg>';
+            };
+
+            modalCover.src = coverUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"><rect fill="%231a1a2e" width="400" height="600"/><text x="50%" y="50%" fill="%23ffffff" font-size="24" text-anchor="middle" dy=".3em">No Cover Art</text></svg>';
+
+            // Show modal
+            modal.classList.add('active');
+        }
+
+        function modalDownload() {
+            if (!currentModalItem || !currentModalType) return;
+            
+            const directorySelect = document.getElementById('directorySelect');
+            const selectedDirectory = directorySelect.value;
+            
+            if (currentModalType === 'sonarr') {
+                addSeries(currentModalItem, selectedDirectory);
+            } else if (currentModalType === 'radarr') {
+                addMovie(currentModalItem, selectedDirectory);
+            }
+            
+            closeModal();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('coverModal');
+            modal.classList.remove('active');
+        }
+
+        // Close modal when clicking outside content
+        document.getElementById('coverModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // SABnzbd functions
+        async function fetchSabnzbdDownloads() {
+            try {
+                const response = await fetch(
+                    `${SABNZBD_CONFIG.url}/api?mode=queue&output=json&apikey=${SABNZBD_CONFIG.apiKey}`
+                );
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('SABnzbd error response:', errorText);
+                    throw new Error(`SABnzbd API error: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('SABnzbd fetch error:', error);
+                throw error;
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatTimeLeft(timeString) {
+            // Handle both seconds (number) and "HH:MM:SS" string format
+            if (!timeString) return 'Unknown';
+            
+            if (typeof timeString === 'number') {
+                if (timeString <= 0) return 'Unknown';
+                if (timeString < 60) return `${Math.round(timeString)}s`;
+                if (timeString < 3600) return `${Math.round(timeString / 60)}m`;
+                if (timeString < 86400) return `${Math.round(timeString / 3600)}h`;
+                return `${Math.round(timeString / 86400)}d`;
+            }
+            
+            // Parse "HH:MM:SS" format
+            if (typeof timeString === 'string') {
+                const parts = timeString.split(':');
+                if (parts.length === 3) {
+                    const hours = parseInt(parts[0]) || 0;
+                    const minutes = parseInt(parts[1]) || 0;
+                    const seconds = parseInt(parts[2]) || 0;
+                    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                    
+                    if (totalSeconds <= 0) return 'Unknown';
+                    if (totalSeconds < 60) return `${seconds}s`;
+                    if (totalSeconds < 3600) return `${minutes}m ${seconds}s`;
+                    if (totalSeconds < 86400) return `${hours}h ${minutes}m`;
+                    return `${hours}h ${minutes}m`;
+                }
+            }
+            
+            return 'Unknown';
+        }
+
+        function displaySabnzbdDownloads(data) {
+            const container = document.getElementById('sabnzbdProgress');
+            
+            if (!data || !data.queue || !data.queue.slots || data.queue.slots.length === 0) {
+                container.innerHTML = '<div class="no-results">No active downloads</div>';
+                return;
+            }
+
+            const downloads = data.queue.slots;
+            
+            container.innerHTML = downloads.map(slot => {
+                // SABnzbd API returns percentage as a string, convert to number
+                const progress = parseFloat(slot.percentage) || 0;
+                const sizeTotal = parseFloat(slot.mb) || 0; // SABnzbd uses 'mb' for size in megabytes
+                const sizeLeft = parseFloat(slot.mbleft) || 0; // SABnzbd uses 'mbleft' for size left in megabytes
+                const sizeDownloaded = sizeTotal - sizeLeft;
+                const eta = slot.timeleft; // SABnzbd returns timeleft as "HH:MM:SS" string
+
+                return `
+                    <div class="download-item">
+                        <div class="download-title">${slot.filename || 'Unknown'}</div>
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+                        <div class="download-info">
+                            <span>${sizeDownloaded.toFixed(2)} MB / ${sizeTotal.toFixed(2)} MB (${progress.toFixed(1)}%)</span>
+                            <span class="download-eta">ETA: ${formatTimeLeft(eta)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateSabnzbdDownloads() {
+            try {
+                const data = await fetchSabnzbdDownloads();
+                displaySabnzbdDownloads(data);
+            } catch (error) {
+                console.error('Failed to update SABnzbd downloads:', error);
+                document.getElementById('sabnzbdProgress').innerHTML = '<div class="error">Failed to load downloads. Make sure SABnzbd is running and accessible.</div>';
+            }
+        }
+
+        // History functions
+        let historyData = [];
+        let allHistoryData = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
+        async function fetchSabnzbdHistory() {
+            try {
+                console.log('SABnzbd Config URL:', SABNZBD_CONFIG.url);
+                
+                if (!SABNZBD_CONFIG.url || !SABNZBD_CONFIG.apiKey) {
+                    console.error('SABnzbd config is missing URL or API key');
+                    throw new Error('SABnzbd configuration is incomplete. Please configure URL and API key in settings.');
+                }
+                
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                
+                const response = await fetch(
+                    `${SABNZBD_CONFIG.url}/api?mode=history&output=json&limit=20000&apikey=${SABNZBD_CONFIG.apiKey}`
+                );
+                
+                console.log('SABnzbd history response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('SABnzbd history error response:', errorText);
+                    throw new Error(`SABnzbd history API error: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('SABnzbd history data:', data);
+                
+                // Store all history for statistics calculation
+                if (data && data.history && data.history.slots) {
+                    allHistoryData = data.history.slots;
+                    
+                    // Filter history to only include items from the past 30 days for display
+                    historyData = data.history.slots.filter(slot => {
+                        const completedTime = new Date(slot.completed * 1000);
+                        return completedTime >= thirtyDaysAgo;
+                    });
+                    console.log('Filtered history data (past 30 days):', historyData);
+                    console.log('Total history items for stats:', allHistoryData.length);
+                } else {
+                    historyData = [];
+                    allHistoryData = [];
+                    console.log('No history data found or unexpected structure');
+                }
+                
+                return historyData;
+            } catch (error) {
+                console.error('SABnzbd history fetch error:', error);
+                throw error;
+            }
+        }
+
+        function parseSizeToBytes(sizeStr) {
+            if (!sizeStr) return 0;
+            const match = sizeStr.match(/^([\d.]+)\s*(\w+)$/i);
+            if (!match) return 0;
+            const value = parseFloat(match[1]);
+            const unit = match[2].toUpperCase();
+            
+            const units = {
+                'B': 1,
+                'KB': 1024,
+                'MB': 1024 * 1024,
+                'GB': 1024 * 1024 * 1024,
+                'TB': 1024 * 1024 * 1024 * 1024
+            };
+            
+            return value * (units[unit] || 1);
+        }
+
+        function calculateDownloadStats() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            let todayBytes = 0;
+            let monthBytes = 0;
+            
+            // Use allHistoryData for statistics to get accurate monthly totals
+            allHistoryData.forEach(slot => {
+                const completedTime = new Date(slot.completed * 1000);
+                const sizeBytes = parseSizeToBytes(slot.size);
+                
+                if (completedTime >= today) {
+                    todayBytes += sizeBytes;
+                }
+                
+                if (completedTime >= thisMonth) {
+                    monthBytes += sizeBytes;
+                }
+            });
+            
+            return {
+                today: formatBytes(todayBytes),
+                month: formatBytes(monthBytes)
+            };
+        }
+
+        function displaySabnzbdHistory() {
+            const container = document.getElementById('sabnzbdHistory');
+            
+            if (!historyData || historyData.length === 0) {
+                container.innerHTML = '<div class="no-results">No history in the past 30 days</div>';
+                return;
+            }
+
+            const stats = calculateDownloadStats();
+
+            const totalPages = Math.ceil(historyData.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = historyData.slice(startIndex, endIndex);
+
+            let html = `<div class="download-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Downloaded Today</div>
+                    <div class="stat-value">${stats.today}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Downloaded This Month</div>
+                    <div class="stat-value">${stats.month}</div>
+                </div>
+            </div>`;
+
+            html += pageData.map(slot => {
+                const completedTime = new Date(slot.completed * 1000);
+                const formattedDate = completedTime.toLocaleString();
+                // SABnzbd returns size already formatted (e.g., "4.0 GB")
+                const formattedSize = slot.size || 'Unknown';
+
+                return `
+                    <div class="download-item">
+                        <div class="download-title">${slot.name || 'Unknown'}</div>
+                        <div class="download-info">
+                            <span>Completed: ${formattedDate}</span>
+                            <span>Size: ${formattedSize}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add pagination controls
+            html += '<div class="pagination">';
+            
+            // Previous button
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>`;
+            
+            // Smart page number display
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            // Always show first page
+            if (startPage > 1) {
+                html += `<button onclick="changePage(1)" ${currentPage === 1 ? 'class="active"' : ''}>1</button>`;
+                if (startPage > 2) {
+                    html += '<span class="pagination-ellipsis">...</span>';
+                }
+            }
+            
+            // Show range of pages around current page
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button onclick="changePage(${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
+            }
+            
+            // Always show last page
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += '<span class="pagination-ellipsis">...</span>';
+                }
+                html += `<button onclick="changePage(${totalPages})" ${currentPage === totalPages ? 'class="active"' : ''}>${totalPages}</button>`;
+            }
+            
+            // Next button
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+            
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(historyData.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            displaySabnzbdHistory();
+        }
+
+        function switchSabnzbdTab(tab) {
+            const tabs = document.querySelectorAll('.sabnzbd-tab');
+            const progressContainer = document.getElementById('sabnzbdProgress');
+            const historyContainer = document.getElementById('sabnzbdHistory');
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'progress') {
+                tabs[0].classList.add('active');
+                progressContainer.style.display = 'block';
+                historyContainer.style.display = 'none';
+            } else if (tab === 'history') {
+                tabs[1].classList.add('active');
+                progressContainer.style.display = 'none';
+                historyContainer.style.display = 'block';
+                currentPage = 1;
+                fetchSabnzbdHistory().then(() => displaySabnzbdHistory()).catch(error => {
+                    console.error('Failed to load history:', error);
+                    historyContainer.innerHTML = '<div class="error">Failed to load history. Make sure SABnzbd is running and accessible.</div>';
+                });
+            }
+        }
+
+        // Initial fetch and auto-refresh every 1 second for live updates
+        updateSabnzbdDownloads();
+        setInterval(updateSabnzbdDownloads, 1000);
+    </script>
+</body>
+</html>
