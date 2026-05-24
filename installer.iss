@@ -9,7 +9,7 @@ Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
-UninstallDisplayIcon={app}\MA.png
+UninstallDisplayIcon={app}\ma1.ico
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"; Flags: unchecked
@@ -21,10 +21,11 @@ Source: "settings.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "about.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "MA.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "ma1.jpg"; DestDir: "{app}"; Flags: ignoreversion
+Source: "ma1.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\MastARR"; Filename: "{win}\explorer.exe"; Parameters: """{app}\index.html"""; WorkingDir: "{app}"; IconFilename: "{app}\ma1.jpg"; Tasks: startmenu
-Name: "{commondesktop}\MastARR"; Filename: "{win}\explorer.exe"; Parameters: """{app}\index.html"""; WorkingDir: "{app}"; IconFilename: "{app}\ma1.jpg"; Tasks: desktopicon
+Name: "{group}\MastARR"; Filename: "{win}\explorer.exe"; Parameters: """{app}\index.html"""; WorkingDir: "{app}"; IconFilename: "{app}\ma1.ico"; Tasks: startmenu
+Name: "{commondesktop}\MastARR"; Filename: "{win}\explorer.exe"; Parameters: """{app}\index.html"""; WorkingDir: "{app}"; IconFilename: "{app}\ma1.ico"; Tasks: desktopicon
 Name: "{group}\Uninstall MastARR"; Filename: "{uninstallexe}"
 
 [Run]
