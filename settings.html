@@ -93,6 +93,10 @@
             color: var(--accent-sabnzbd);
         }
 
+        .settings-section.remote h2 {
+            color: #8bc34a;
+        }
+
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -153,6 +157,45 @@
             border-color: var(--accent-sonarr);
         }
 
+        .button-row {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .status-message {
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status-message.success {
+            display: block;
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+            color: #4caf50;
+        }
+
+        .status-message.error {
+            display: block;
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            color: #f44336;
+        }
+
+        .help-text {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .help-list {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-left: 1.25rem;
+        }
+
         .save-button {
             padding: 0.75rem 1.5rem;
             background: linear-gradient(90deg, var(--accent-sonarr), var(--accent-radarr));
@@ -200,8 +243,14 @@
         <div class="settings-section sonarr">
             <h2>📺 Sonarr Settings</h2>
             <div class="form-group">
-                <label for="sonarrUrl">Sonarr URL</label>
-                <input type="text" id="sonarrUrl" placeholder="Enter Sonarr URL" />
+                <label for="sonarrUrl">Local Network URL</label>
+                <input type="text" id="sonarrUrl" placeholder="Enter local Sonarr URL" />
+            </div>
+            <div class="form-group">
+                <label for="sonarrTailscaleUrl">Tailscale IP URL</label>
+                <input type="text" id="sonarrTailscaleUrl" placeholder="Enter Tailscale Sonarr URL" />
+                <button type="button" class="load-button" onclick="testConnection('sonarr')">Test Sonarr Connection</button>
+                <div id="sonarrConnectionStatus" class="status-message"></div>
             </div>
             <div class="form-group">
                 <label for="sonarrApiKey">Sonarr API Key</label>
@@ -212,15 +261,23 @@
                 <select id="sonarrDefaultRootFolder">
                     <option value="">Use first available Sonarr root folder</option>
                 </select>
-                <button type="button" class="load-button" onclick="loadRootFolders('sonarr')">Load Sonarr Directories</button>
+                <div class="button-row">
+                    <button type="button" class="load-button" onclick="loadRootFolders('sonarr')">Load Sonarr Directories</button>
+                </div>
             </div>
         </div>
         
         <div class="settings-section radarr">
             <h2>🎬 Radarr Settings</h2>
             <div class="form-group">
-                <label for="radarrUrl">Radarr URL</label>
-                <input type="text" id="radarrUrl" placeholder="Enter Radarr URL" />
+                <label for="radarrUrl">Local Network URL</label>
+                <input type="text" id="radarrUrl" placeholder="Enter local Radarr URL" />
+            </div>
+            <div class="form-group">
+                <label for="radarrTailscaleUrl">Tailscale IP URL</label>
+                <input type="text" id="radarrTailscaleUrl" placeholder="Enter Tailscale Radarr URL" />
+                <button type="button" class="load-button" onclick="testConnection('radarr')">Test Radarr Connection</button>
+                <div id="radarrConnectionStatus" class="status-message"></div>
             </div>
             <div class="form-group">
                 <label for="radarrApiKey">Radarr API Key</label>
@@ -231,20 +288,41 @@
                 <select id="radarrDefaultRootFolder">
                     <option value="">Use first available Radarr root folder</option>
                 </select>
-                <button type="button" class="load-button" onclick="loadRootFolders('radarr')">Load Radarr Directories</button>
+                <div class="button-row">
+                    <button type="button" class="load-button" onclick="loadRootFolders('radarr')">Load Radarr Directories</button>
+                </div>
             </div>
         </div>
-        
+
         <div class="settings-section sabnzbd">
             <h2>📥 Sabnzbd Settings</h2>
             <div class="form-group">
-                <label for="sabnzbdUrl">Sabnzbd URL</label>
-                <input type="text" id="sabnzbdUrl" placeholder="Enter Sabnzbd URL" />
+                <label for="sabnzbdUrl">Local Network URL</label>
+                <input type="text" id="sabnzbdUrl" placeholder="Enter local Sabnzbd URL" />
+            </div>
+            <div class="form-group">
+                <label for="sabnzbdTailscaleUrl">Tailscale IP URL</label>
+                <input type="text" id="sabnzbdTailscaleUrl" placeholder="Enter Tailscale Sabnzbd URL" />
+                <button type="button" class="load-button" onclick="testConnection('sabnzbd')">Test Sabnzbd Connection</button>
+                <div id="sabnzbdConnectionStatus" class="status-message"></div>
             </div>
             <div class="form-group">
                 <label for="sabnzbdApiKey">Sabnzbd API Key</label>
                 <input type="password" id="sabnzbdApiKey" placeholder="Enter API key" />
             </div>
+        </div>
+
+        <div class="settings-section remote">
+            <h2>🌐 Remote Access / Tailscale</h2>
+            <p class="help-text">
+                MastARR can connect to Sonarr and Radarr through Tailscale by using the Tailscale address as the service URL.
+            </p>
+            <ol class="help-list">
+                <li>Install tailscaile on this device.</li>
+                <li>Install Tailscale on the machine hosting Sonarr, Radarr, or both.</li>
+                <li>Sign both devices into the same Tailscale network.</li>
+                <li>Click the Test Connection button to confirm MastARR can reach each service.</li>
+            </ol>
         </div>
 
         <button class="save-button" onclick="saveSettings()">Save Settings</button>
@@ -255,10 +333,13 @@
             const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
             
             document.getElementById('sonarrUrl').value = settings.sonarrUrl || '';
+            document.getElementById('sonarrTailscaleUrl').value = settings.sonarrTailscaleUrl || '';
             document.getElementById('sonarrApiKey').value = settings.sonarrApiKey || '';
             document.getElementById('radarrUrl').value = settings.radarrUrl || '';
+            document.getElementById('radarrTailscaleUrl').value = settings.radarrTailscaleUrl || '';
             document.getElementById('radarrApiKey').value = settings.radarrApiKey || '';
             document.getElementById('sabnzbdUrl').value = settings.sabnzbdUrl || '';
+            document.getElementById('sabnzbdTailscaleUrl').value = settings.sabnzbdTailscaleUrl || '';
             document.getElementById('sabnzbdApiKey').value = settings.sabnzbdApiKey || '';
             setDefaultRootFolderOption('sonarrDefaultRootFolder', settings.sonarrDefaultRootFolder || '');
             setDefaultRootFolderOption('radarrDefaultRootFolder', settings.radarrDefaultRootFolder || '');
@@ -267,12 +348,15 @@
         function saveSettings() {
             const settings = {
                 sonarrUrl: document.getElementById('sonarrUrl').value,
+                sonarrTailscaleUrl: document.getElementById('sonarrTailscaleUrl').value,
                 sonarrApiKey: document.getElementById('sonarrApiKey').value,
                 sonarrDefaultRootFolder: document.getElementById('sonarrDefaultRootFolder').value,
                 radarrUrl: document.getElementById('radarrUrl').value,
+                radarrTailscaleUrl: document.getElementById('radarrTailscaleUrl').value,
                 radarrApiKey: document.getElementById('radarrApiKey').value,
                 radarrDefaultRootFolder: document.getElementById('radarrDefaultRootFolder').value,
                 sabnzbdUrl: document.getElementById('sabnzbdUrl').value,
+                sabnzbdTailscaleUrl: document.getElementById('sabnzbdTailscaleUrl').value,
                 sabnzbdApiKey: document.getElementById('sabnzbdApiKey').value
             };
             
@@ -295,14 +379,40 @@
             }
         }
 
+        function getServiceUrls(type) {
+            return [
+                document.getElementById(`${type}Url`).value,
+                document.getElementById(`${type}TailscaleUrl`).value
+            ].filter(Boolean);
+        }
+
+        async function fetchWithFallback(type, path) {
+            const urls = getServiceUrls(type);
+            let lastError;
+
+            for (const baseUrl of urls) {
+                try {
+                    const response = await fetch(`${baseUrl}${path}`);
+                    if (response.ok || response.status >= 400) {
+                        response.baseUrl = baseUrl;
+                        return response;
+                    }
+                    lastError = new Error(`HTTP ${response.status}`);
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+
+            throw lastError || new Error('No service URL configured');
+        }
+
         async function loadRootFolders(type) {
-            const urlInput = document.getElementById(`${type}Url`);
             const apiKeyInput = document.getElementById(`${type}ApiKey`);
             const select = document.getElementById(`${type}DefaultRootFolder`);
             const currentValue = select.value;
             const serviceName = type === 'sonarr' ? 'Sonarr' : 'Radarr';
 
-            if (!urlInput.value || !apiKeyInput.value) {
+            if (getServiceUrls(type).length === 0 || !apiKeyInput.value) {
                 alert(`Please enter your ${serviceName} URL and API key first.`);
                 return;
             }
@@ -310,7 +420,7 @@
             select.innerHTML = '<option value="">Loading directories...</option>';
 
             try {
-                const response = await fetch(`${urlInput.value}/api/v3/rootfolder?apiKey=${apiKeyInput.value}`);
+                const response = await fetchWithFallback(type, `/api/v3/rootfolder?apiKey=${apiKeyInput.value}`);
 
                 if (!response.ok) {
                     throw new Error(`Failed to load ${serviceName} directories.`);
@@ -328,6 +438,75 @@
             } catch (error) {
                 select.innerHTML = '<option value="">Failed to load directories</option>';
                 alert(error.message);
+            }
+        }
+
+        async function testConnection(type) {
+            const primaryUrl = document.getElementById(`${type}Url`).value;
+            const tailscaleUrl = document.getElementById(`${type}TailscaleUrl`).value;
+            const apiKeyInput = document.getElementById(`${type}ApiKey`);
+            const status = document.getElementById(`${type}ConnectionStatus`);
+            const serviceName = type === 'sonarr' ? 'Sonarr' : type === 'radarr' ? 'Radarr' : 'Sabnzbd';
+
+            status.className = 'status-message';
+            status.textContent = '';
+
+            if (getServiceUrls(type).length === 0 || !apiKeyInput.value) {
+                status.textContent = `Please enter your ${serviceName} URL and API key first.`;
+                status.classList.add('error');
+                return;
+            }
+
+            status.textContent = `Testing ${serviceName} connection...`;
+            status.classList.add('success');
+
+            const testPath = type === 'sabnzbd'
+                ? `/api?mode=version&output=json&apikey=${apiKeyInput.value}`
+                : `/api/v3/system/status?apiKey=${apiKeyInput.value}`;
+
+            const tests = await Promise.all([
+                testSingleConnection(primaryUrl, testPath),
+                testSingleConnection(tailscaleUrl, testPath)
+            ]);
+
+            const primaryPassed = tests[0].passed;
+            const tailscalePassed = tests[1].passed;
+            const version = tests.find(test => test.version)?.version || '';
+
+            if (primaryUrl && tailscaleUrl && primaryPassed && tailscalePassed) {
+                status.textContent = `${serviceName} connection successful on both primary URL and Tailscale URL${version ? ` - version ${version}` : ''}.`;
+                status.className = 'status-message success';
+            } else if (primaryUrl && primaryPassed && (!tailscaleUrl || !tailscalePassed)) {
+                status.textContent = `${serviceName} connection successful on primary URL${version ? ` - version ${version}` : ''}.${tailscaleUrl ? ' Tailscale URL failed.' : ''}`;
+                status.className = tailscaleUrl ? 'status-message error' : 'status-message success';
+            } else if (tailscaleUrl && tailscalePassed && (!primaryUrl || !primaryPassed)) {
+                status.textContent = `${serviceName} connection successful on Tailscale URL${version ? ` - version ${version}` : ''}.${primaryUrl ? ' Primary URL failed.' : ''}`;
+                status.className = primaryUrl ? 'status-message error' : 'status-message success';
+            } else {
+                status.textContent = `${serviceName} connection failed on both primary URL and Tailscale URL. Check the URLs, API key, Tailscale connection, and service port.`;
+                status.className = 'status-message error';
+            }
+        }
+
+        async function testSingleConnection(baseUrl, path) {
+            if (!baseUrl) {
+                return { passed: false, version: '' };
+            }
+
+            try {
+                const response = await fetch(`${baseUrl}${path}`);
+
+                if (!response.ok) {
+                    return { passed: false, version: '' };
+                }
+
+                const data = await response.json();
+                return {
+                    passed: true,
+                    version: data.version || data.status?.version || ''
+                };
+            } catch (error) {
+                return { passed: false, version: '' };
             }
         }
 

@@ -964,16 +964,19 @@
             return {
                 sonarr: {
                     url: settings.sonarrUrl || '',
+                    tailscaleUrl: settings.sonarrTailscaleUrl || '',
                     apiKey: settings.sonarrApiKey || '',
                     defaultRootFolder: settings.sonarrDefaultRootFolder || ''
                 },
                 radarr: {
                     url: settings.radarrUrl || '',
+                    tailscaleUrl: settings.radarrTailscaleUrl || '',
                     apiKey: settings.radarrApiKey || '',
                     defaultRootFolder: settings.radarrDefaultRootFolder || ''
                 },
                 sabnzbd: {
                     url: settings.sabnzbdUrl || '',
+                    tailscaleUrl: settings.sabnzbdTailscaleUrl || '',
                     apiKey: settings.sabnzbdApiKey || ''
                 }
             };
@@ -983,20 +986,52 @@
 
         const SONARR_CONFIG = {
             url: config.sonarr.url,
+            tailscaleUrl: config.sonarr.tailscaleUrl,
             apiKey: config.sonarr.apiKey,
             defaultRootFolder: config.sonarr.defaultRootFolder
         };
 
         const RADARR_CONFIG = {
             url: config.radarr.url,
+            tailscaleUrl: config.radarr.tailscaleUrl,
             apiKey: config.radarr.apiKey,
             defaultRootFolder: config.radarr.defaultRootFolder
         };
 
         const SABNZBD_CONFIG = {
             url: config.sabnzbd.url,
+            tailscaleUrl: config.sabnzbd.tailscaleUrl,
             apiKey: config.sabnzbd.apiKey
         };
+
+        function getServiceUrls(config) {
+            return [config.url, config.tailscaleUrl].filter(Boolean);
+        }
+
+        async function fetchWithFallback(config, path, options) {
+            const urls = getServiceUrls(config);
+            let lastError;
+
+            for (const baseUrl of urls) {
+                try {
+                    const response = await fetch(`${baseUrl}${path}`, options);
+                    if (response.ok || response.status >= 400) {
+                        response.baseUrl = baseUrl;
+                        return response;
+                    }
+                    lastError = new Error(`HTTP ${response.status}`);
+                } catch (error) {
+                    lastError = error;
+                }
+            }
+
+            throw lastError || new Error('No service URL configured');
+        }
+
+        async function fetchJsonWithFallback(config, path, options) {
+            const response = await fetchWithFallback(config, path, options);
+            return await response.json();
+        }
 
         // Theme switching functionality
         function changeTheme(theme) {
@@ -1089,8 +1124,9 @@
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
                 
-                const response = await fetch(
-                    `${SONARR_CONFIG.url}/api/v3/calendar?start=${startOfMonth.toISOString()}&end=${endOfMonth.toISOString()}&apiKey=${SONARR_CONFIG.apiKey}`
+                const response = await fetchWithFallback(
+                    SONARR_CONFIG,
+                    `/api/v3/calendar?start=${startOfMonth.toISOString()}&end=${endOfMonth.toISOString()}&apiKey=${SONARR_CONFIG.apiKey}`
                 );
                 if (!response.ok) throw new Error('Sonarr calendar API error');
                 return await response.json();
@@ -1106,8 +1142,9 @@
                 const startDate = now;
                 const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
                 
-                const response = await fetch(
-                    `${RADARR_CONFIG.url}/api/v3/calendar?start=${startDate.toISOString()}&end=${endDate.toISOString()}&apiKey=${RADARR_CONFIG.apiKey}`
+                const response = await fetchWithFallback(
+                    RADARR_CONFIG,
+                    `/api/v3/calendar?start=${startDate.toISOString()}&end=${endDate.toISOString()}&apiKey=${RADARR_CONFIG.apiKey}`
                 );
                 if (!response.ok) throw new Error('Radarr calendar API error');
                 return await response.json();
@@ -1139,8 +1176,9 @@
             
             for (const seriesId of seriesIds) {
                 try {
-                    const response = await fetch(
-                        `${SONARR_CONFIG.url}/api/v3/series/${seriesId}?apiKey=${SONARR_CONFIG.apiKey}`
+                    const response = await fetchWithFallback(
+                        SONARR_CONFIG,
+                        `/api/v3/series/${seriesId}?apiKey=${SONARR_CONFIG.apiKey}`
                     );
                     if (response.ok) {
                         const series = await response.json();
@@ -1177,7 +1215,7 @@
 
             // Fetch existing movies from library to filter out
             try {
-                const existingMovies = await fetch(`${RADARR_CONFIG.url}/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`).then(r => r.json());
+                const existingMovies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
                 const existingMovieIds = new Set(existingMovies.map(m => m.tmdbId));
                 
                 // Filter out movies that are already in the library
@@ -1258,8 +1296,9 @@
 
         async function searchSonarr(query) {
             try {
-                const response = await fetch(
-                    `${SONARR_CONFIG.url}/api/v3/series/lookup?term=${encodeURIComponent(query)}&apiKey=${SONARR_CONFIG.apiKey}`
+                const response = await fetchWithFallback(
+                    SONARR_CONFIG,
+                    `/api/v3/series/lookup?term=${encodeURIComponent(query)}&apiKey=${SONARR_CONFIG.apiKey}`
                 );
                 if (!response.ok) throw new Error('Sonarr API error');
                 return await response.json();
@@ -1271,8 +1310,9 @@
 
         async function searchRadarr(query) {
             try {
-                const response = await fetch(
-                    `${RADARR_CONFIG.url}/api/v3/movie/lookup?term=${encodeURIComponent(query)}&apiKey=${RADARR_CONFIG.apiKey}`
+                const response = await fetchWithFallback(
+                    RADARR_CONFIG,
+                    `/api/v3/movie/lookup?term=${encodeURIComponent(query)}&apiKey=${RADARR_CONFIG.apiKey}`
                 );
                 if (!response.ok) throw new Error('Radarr API error');
                 return await response.json();
@@ -1293,7 +1333,7 @@
                 console.log('Adding series:', series.title);
                 
                 // Check if series already exists in library
-                const existingSeries = await fetch(`${SONARR_CONFIG.url}/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`).then(r => r.json());
+                const existingSeries = await fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`);
                 const existing = existingSeries.find(s => s.tvdbId === series.tvdbId);
                 
                 if (existing) {
@@ -1310,8 +1350,8 @@
                 
                 // First, fetch the root folders and quality profiles to get valid IDs
                 const [rootFolders, qualityProfiles] = await Promise.all([
-                    fetch(`${SONARR_CONFIG.url}/api/v3/rootfolder?apiKey=${SONARR_CONFIG.apiKey}`).then(r => r.json()),
-                    fetch(`${SONARR_CONFIG.url}/api/v3/qualityprofile?apiKey=${SONARR_CONFIG.apiKey}`).then(r => r.json())
+                    fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/rootfolder?apiKey=${SONARR_CONFIG.apiKey}`),
+                    fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/qualityprofile?apiKey=${SONARR_CONFIG.apiKey}`)
                 ]);
 
                 console.log('Available root folders:', rootFolders);
@@ -1339,8 +1379,9 @@
 
                 console.log('Sending to Sonarr:', seriesData);
 
-                const response = await fetch(
-                    `${SONARR_CONFIG.url}/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`,
+                const response = await fetchWithFallback(
+                    SONARR_CONFIG,
+                    `/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`,
                     {
                         method: 'POST',
                         headers: {
@@ -1399,7 +1440,7 @@
                 console.log('Adding movie:', movie.title);
                 
                 // Check if movie already exists in library
-                const existingMovies = await fetch(`${RADARR_CONFIG.url}/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`).then(r => r.json());
+                const existingMovies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
                 const existingMovie = existingMovies.find(m => m.tmdbId === movie.tmdbId);
                 
                 if (existingMovie) {
@@ -1416,8 +1457,8 @@
                 
                 // First, fetch the root folders and quality profiles to get valid IDs
                 const [rootFolders, qualityProfiles] = await Promise.all([
-                    fetch(`${RADARR_CONFIG.url}/api/v3/rootfolder?apiKey=${RADARR_CONFIG.apiKey}`).then(r => r.json()),
-                    fetch(`${RADARR_CONFIG.url}/api/v3/qualityprofile?apiKey=${RADARR_CONFIG.apiKey}`).then(r => r.json())
+                    fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/rootfolder?apiKey=${RADARR_CONFIG.apiKey}`),
+                    fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/qualityprofile?apiKey=${RADARR_CONFIG.apiKey}`)
                 ]);
 
                 console.log('Available root folders:', rootFolders);
@@ -1445,8 +1486,9 @@
 
                 console.log('Sending to Radarr:', movieData);
 
-                const response = await fetch(
-                    `${RADARR_CONFIG.url}/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`,
+                const response = await fetchWithFallback(
+                    RADARR_CONFIG,
+                    `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`,
                     {
                         method: 'POST',
                         headers: {
@@ -1598,10 +1640,10 @@
                 let isInLibrary = false;
                 
                 if (type === 'radarr' && item.tmdbId) {
-                    const movies = await fetch(`${RADARR_CONFIG.url}/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`).then(r => r.json());
+                    const movies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
                     isInLibrary = movies.some(m => m.tmdbId === item.tmdbId);
                 } else if (type === 'sonarr' && item.tvdbId) {
-                    const series = await fetch(`${SONARR_CONFIG.url}/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`).then(r => r.json());
+                    const series = await fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`);
                     isInLibrary = series.some(s => s.tvdbId === item.tvdbId);
                 }
                 
@@ -1653,7 +1695,7 @@
             // Fetch and populate root folders based on type
             try {
                 const config = type === 'sonarr' ? SONARR_CONFIG : RADARR_CONFIG;
-                const response = await fetch(`${config.url}/api/v3/rootfolder?apiKey=${config.apiKey}`);
+                const response = await fetchWithFallback(config, `/api/v3/rootfolder?apiKey=${config.apiKey}`);
                 if (response.ok) {
                     const rootFolders = await response.json();
                     const defaultRootFolder = config.defaultRootFolder || '';
@@ -1675,8 +1717,9 @@
             let coverUrl = '';
             try {
                 if (type === 'sonarr' && item.tvdbId) {
-                    const response = await fetch(
-                        `${SONARR_CONFIG.url}/api/v3/series/lookup?term=tvdb:${item.tvdbId}&apiKey=${SONARR_CONFIG.apiKey}`
+                    const response = await fetchWithFallback(
+                        SONARR_CONFIG,
+                        `/api/v3/series/lookup?term=tvdb:${item.tvdbId}&apiKey=${SONARR_CONFIG.apiKey}`
                     );
                     if (response.ok) {
                         const data = await response.json();
@@ -1684,19 +1727,20 @@
                             coverUrl = data[0].poster;
                             // Prepend Sonarr URL if it's a relative path
                             if (coverUrl.startsWith('/')) {
-                                coverUrl = `${SONARR_CONFIG.url}${coverUrl}`;
+                                coverUrl = `${response.baseUrl || SONARR_CONFIG.url}${coverUrl}`;
                             }
                         } else if (data && data.length > 0 && data[0].images && data[0].images.length > 0) {
                             coverUrl = data[0].images[0].url;
                             // Prepend Sonarr URL if it's a relative path
                             if (coverUrl.startsWith('/')) {
-                                coverUrl = `${SONARR_CONFIG.url}${coverUrl}`;
+                                coverUrl = `${response.baseUrl || SONARR_CONFIG.url}${coverUrl}`;
                             }
                         }
                     }
                 } else if (type === 'radarr' && item.tmdbId) {
-                    const response = await fetch(
-                        `${RADARR_CONFIG.url}/api/v3/movie/lookup?term=tmdb:${item.tmdbId}&apiKey=${RADARR_CONFIG.apiKey}`
+                    const response = await fetchWithFallback(
+                        RADARR_CONFIG,
+                        `/api/v3/movie/lookup?term=tmdb:${item.tmdbId}&apiKey=${RADARR_CONFIG.apiKey}`
                     );
                     if (response.ok) {
                         const data = await response.json();
@@ -1704,13 +1748,13 @@
                             coverUrl = data[0].poster;
                             // Prepend Radarr URL if it's a relative path
                             if (coverUrl.startsWith('/')) {
-                                coverUrl = `${RADARR_CONFIG.url}${coverUrl}`;
+                                coverUrl = `${response.baseUrl || RADARR_CONFIG.url}${coverUrl}`;
                             }
                         } else if (data && data.length > 0 && data[0].images && data[0].images.length > 0) {
                             coverUrl = data[0].images[0].url;
                             // Prepend Radarr URL if it's a relative path
                             if (coverUrl.startsWith('/')) {
-                                coverUrl = `${RADARR_CONFIG.url}${coverUrl}`;
+                                coverUrl = `${response.baseUrl || RADARR_CONFIG.url}${coverUrl}`;
                             }
                         }
                     }
@@ -1773,8 +1817,9 @@
         // SABnzbd functions
         async function fetchSabnzbdDownloads() {
             try {
-                const response = await fetch(
-                    `${SABNZBD_CONFIG.url}/api?mode=queue&output=json&apikey=${SABNZBD_CONFIG.apiKey}`
+                const response = await fetchWithFallback(
+                    SABNZBD_CONFIG,
+                    `/api?mode=queue&output=json&apikey=${SABNZBD_CONFIG.apiKey}`
                 );
                 
                 if (!response.ok) {
@@ -1886,7 +1931,7 @@
             try {
                 console.log('SABnzbd Config URL:', SABNZBD_CONFIG.url);
                 
-                if (!SABNZBD_CONFIG.url || !SABNZBD_CONFIG.apiKey) {
+                if ((!SABNZBD_CONFIG.url && !SABNZBD_CONFIG.tailscaleUrl) || !SABNZBD_CONFIG.apiKey) {
                     console.error('SABnzbd config is missing URL or API key');
                     throw new Error('SABnzbd configuration is incomplete. Please configure URL and API key in settings.');
                 }
@@ -1894,8 +1939,9 @@
                 const thirtyDaysAgo = new Date();
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                 
-                const response = await fetch(
-                    `${SABNZBD_CONFIG.url}/api?mode=history&output=json&limit=20000&apikey=${SABNZBD_CONFIG.apiKey}`
+                const response = await fetchWithFallback(
+                    SABNZBD_CONFIG,
+                    `/api?mode=history&output=json&limit=20000&apikey=${SABNZBD_CONFIG.apiKey}`
                 );
                 
                 console.log('SABnzbd history response status:', response.status);
@@ -2104,3 +2150,5 @@
     </script>
 </body>
 </html>
+
+
