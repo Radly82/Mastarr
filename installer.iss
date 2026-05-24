@@ -21,11 +21,10 @@ Source: "settings.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "about.html"; DestDir: "{app}"; Flags: ignoreversion
 Source: "MA.png"; DestDir: "{app}"; Flags: ignoreversion
 Source: "ma1.jpg"; DestDir: "{app}"; Flags: ignoreversion
-Source: "launch.bat"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\MastARR"; Filename: "{app}\launch.bat"; IconFilename: "{app}\ma1.jpg"; Tasks: startmenu
-Name: "{commondesktop}\MastARR"; Filename: "{app}\launch.bat"; IconFilename: "{app}\ma1.jpg"; Tasks: desktopicon
+Name: "{group}\MastARR"; Filename: "{win}\explorer.exe"; Parameters: """{app}\index.html"""; WorkingDir: "{app}"; IconFilename: "{app}\ma1.jpg"; Tasks: startmenu
+Name: "{commondesktop}\MastARR"; Filename: "{win}\explorer.exe"; Parameters: """{app}\index.html"""; WorkingDir: "{app}"; IconFilename: "{app}\ma1.jpg"; Tasks: desktopicon
 Name: "{group}\Uninstall MastARR"; Filename: "{uninstallexe}"
 
 [Run]
