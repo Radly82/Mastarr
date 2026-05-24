@@ -1,0 +1,16 @@
+node_modules/
+webview2-build/
+MastARR.exe
+MastARRLauncher.exe
+Microsoft.Web.WebView2.Core.dll
+Microsoft.Web.WebView2.WinForms.dll
+MicrosoftEdgeWebView2Setup.exe
+WebView2Loader.dll
+DefaultBrowserLauncher.cs
+MastARRApp.cs
+MastARRLauncher.cs
+MastARRLauncher2.cs
+launch.vbs
+*.blockmap
+builder-debug.yml
+win-unpacked/

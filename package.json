@@ -1,0 +1,46 @@
+{
+  "name": "mastarr",
+  "version": "0.1.0",
+  "description": "MastARR desktop application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis",
+    "pack": "electron-builder --win dir"
+  },
+  "build": {
+    "appId": "com.mastarr.app",
+    "productName": "MastARR",
+    "directories": {
+      "output": "C:/Users/conra/CascadeProjects/mastarr installer"
+    },
+    "files": [
+      "index.html",
+      "settings.html",
+      "about.html",
+      "main.js",
+      "preload.js",
+      "MA.png",
+      "ma1.ico"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "ma1.ico",
+      "signAndEditExecutable": false,
+      "artifactName": "MastARR-Setup.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MastARR",
+      "differentialPackage": false
+    },
+    "publish": null
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  }
+}

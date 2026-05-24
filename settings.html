@@ -121,6 +121,38 @@
             box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
         }
 
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-sonarr);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .load-button {
+            margin-top: 0.75rem;
+            padding: 0.6rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .load-button:hover {
+            border-color: var(--accent-sonarr);
+        }
+
         .save-button {
             padding: 0.75rem 1.5rem;
             background: linear-gradient(90deg, var(--accent-sonarr), var(--accent-radarr));
@@ -175,6 +207,13 @@
                 <label for="sonarrApiKey">Sonarr API Key</label>
                 <input type="password" id="sonarrApiKey" placeholder="Enter API key" />
             </div>
+            <div class="form-group">
+                <label for="sonarrDefaultRootFolder">Default Series Directory</label>
+                <select id="sonarrDefaultRootFolder">
+                    <option value="">Use first available Sonarr root folder</option>
+                </select>
+                <button type="button" class="load-button" onclick="loadRootFolders('sonarr')">Load Sonarr Directories</button>
+            </div>
         </div>
         
         <div class="settings-section radarr">
@@ -186,6 +225,13 @@
             <div class="form-group">
                 <label for="radarrApiKey">Radarr API Key</label>
                 <input type="password" id="radarrApiKey" placeholder="Enter API key" />
+            </div>
+            <div class="form-group">
+                <label for="radarrDefaultRootFolder">Default Movie Directory</label>
+                <select id="radarrDefaultRootFolder">
+                    <option value="">Use first available Radarr root folder</option>
+                </select>
+                <button type="button" class="load-button" onclick="loadRootFolders('radarr')">Load Radarr Directories</button>
             </div>
         </div>
         
@@ -200,7 +246,7 @@
                 <input type="password" id="sabnzbdApiKey" placeholder="Enter API key" />
             </div>
         </div>
-        
+
         <button class="save-button" onclick="saveSettings()">Save Settings</button>
     </div>
 
@@ -214,14 +260,18 @@
             document.getElementById('radarrApiKey').value = settings.radarrApiKey || '';
             document.getElementById('sabnzbdUrl').value = settings.sabnzbdUrl || '';
             document.getElementById('sabnzbdApiKey').value = settings.sabnzbdApiKey || '';
+            setDefaultRootFolderOption('sonarrDefaultRootFolder', settings.sonarrDefaultRootFolder || '');
+            setDefaultRootFolderOption('radarrDefaultRootFolder', settings.radarrDefaultRootFolder || '');
         }
 
         function saveSettings() {
             const settings = {
                 sonarrUrl: document.getElementById('sonarrUrl').value,
                 sonarrApiKey: document.getElementById('sonarrApiKey').value,
+                sonarrDefaultRootFolder: document.getElementById('sonarrDefaultRootFolder').value,
                 radarrUrl: document.getElementById('radarrUrl').value,
                 radarrApiKey: document.getElementById('radarrApiKey').value,
+                radarrDefaultRootFolder: document.getElementById('radarrDefaultRootFolder').value,
                 sabnzbdUrl: document.getElementById('sabnzbdUrl').value,
                 sabnzbdApiKey: document.getElementById('sabnzbdApiKey').value
             };
@@ -234,6 +284,51 @@
             setTimeout(() => {
                 successMessage.classList.remove('show');
             }, 3000);
+        }
+
+        function setDefaultRootFolderOption(selectId, value) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Use first available root folder</option>';
+
+            if (value) {
+                select.innerHTML += `<option value="${value}" selected>${value}</option>`;
+            }
+        }
+
+        async function loadRootFolders(type) {
+            const urlInput = document.getElementById(`${type}Url`);
+            const apiKeyInput = document.getElementById(`${type}ApiKey`);
+            const select = document.getElementById(`${type}DefaultRootFolder`);
+            const currentValue = select.value;
+            const serviceName = type === 'sonarr' ? 'Sonarr' : 'Radarr';
+
+            if (!urlInput.value || !apiKeyInput.value) {
+                alert(`Please enter your ${serviceName} URL and API key first.`);
+                return;
+            }
+
+            select.innerHTML = '<option value="">Loading directories...</option>';
+
+            try {
+                const response = await fetch(`${urlInput.value}/api/v3/rootfolder?apiKey=${apiKeyInput.value}`);
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load ${serviceName} directories.`);
+                }
+
+                const rootFolders = await response.json();
+                select.innerHTML = '<option value="">Use first available root folder</option>';
+                rootFolders.forEach(folder => {
+                    const option = document.createElement('option');
+                    option.value = folder.path;
+                    option.textContent = folder.path;
+                    option.selected = folder.path === currentValue;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                select.innerHTML = '<option value="">Failed to load directories</option>';
+                alert(error.message);
+            }
         }
 
         // Load settings on page load
