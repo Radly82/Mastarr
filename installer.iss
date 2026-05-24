@@ -17,7 +17,7 @@ Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription:
 
 [Files]
 Source: "dist\win-unpacked\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "ma1.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\ma1.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\MastARR"; Filename: "{app}\MastARR.exe"; WorkingDir: "{app}"; IconFilename: "{app}\ma1.ico"
