@@ -17,6 +17,50 @@
             --border-color: rgba(255, 255, 255, 0.08);
         }
 
+        [data-theme="blue"] {
+            --bg-primary: #0a1929;
+            --bg-secondary: #102a43;
+            --bg-tertiary: #15395b;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-sonarr: #00bcd4;
+            --accent-radarr: #3f51b5;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="green"] {
+            --bg-primary: #0d1f0d;
+            --bg-secondary: #1a2f1a;
+            --bg-tertiary: #243a24;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-sonarr: #4caf50;
+            --accent-radarr: #2e7d32;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="80s"] {
+            --bg-primary: #1a0a2e;
+            --bg-secondary: #2d1b4e;
+            --bg-tertiary: #402470;
+            --text-primary: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.8);
+            --accent-sonarr: #ff00ff;
+            --accent-radarr: #00ffff;
+            --border-color: rgba(255, 0, 255, 0.3);
+        }
+
+        [data-theme="theatre"] {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --text-primary: #ffd700;
+            --text-secondary: rgba(255, 215, 0, 0.7);
+            --accent-sonarr: #c41e3a;
+            --accent-radarr: #8b0000;
+            --border-color: rgba(255, 215, 0, 0.2);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -281,11 +325,146 @@
         .success-message.show {
             display: block;
         }
+
+        .theme-selector {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 100;
+        }
+
+        .theme-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .dot {
+            width: 4px;
+            height: 4px;
+            background: var(--text-primary);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .theme-button:hover .dot {
+            background: var(--accent-sonarr);
+            transform: scale(1.5);
+        }
+
+        .dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 0.5rem;
+            min-width: 200px;
+            border: 1px solid var(--border-color);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .menu-item {
+            padding: 0.75rem 1rem;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .menu-item.active {
+            background: var(--bg-tertiary);
+        }
+
+        .submenu-toggle {
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .menu-item.active .submenu-toggle {
+            transform: rotate(180deg);
+        }
+
+        .submenu {
+            display: none;
+            padding-left: 1rem;
+            margin-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 0.5rem;
+        }
+
+        .submenu.active {
+            display: block;
+        }
+
+        .theme-option {
+            padding: 0.5rem 0.75rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            margin-bottom: 0.25rem;
+        }
+
+        .theme-option:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .theme-option.selected {
+            background: var(--accent-sonarr);
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="index.html" class="back-button">← Back to Main</a>
+        
+        <div class="theme-selector">
+            <button class="theme-button" onclick="toggleMainDropdown()" aria-label="Menu">
+                <span class="dot">•</span>
+                <span class="dot">•</span>
+                <span class="dot">•</span>
+            </button>
+            <div class="dropdown" id="mainDropdown">
+                <div class="menu-item">
+                    <span>Theme</span>
+                    <div class="submenu-toggle" onclick="toggleSubmenu('themeSubmenu')">▼</div>
+                </div>
+                <div class="submenu" id="themeSubmenu">
+                    <div class="theme-option" onclick="changeTheme('dark')" data-theme="dark">Dark Theme</div>
+                    <div class="theme-option" onclick="changeTheme('blue')" data-theme="blue">Blue Theme</div>
+                    <div class="theme-option" onclick="changeTheme('green')" data-theme="green">Green Theme</div>
+                    <div class="theme-option" onclick="changeTheme('80s')" data-theme="80s">80's Theme</div>
+                    <div class="theme-option" onclick="changeTheme('theatre')" data-theme="theatre">Theatre Theme</div>
+                </div>
+            </div>
+        </div>
         
         <h1>Settings</h1>
         
@@ -674,8 +853,92 @@
             }
         }
 
+        // Theme switching functionality
+        function changeTheme(theme) {
+            const html = document.documentElement;
+            
+            // Remove all theme attributes
+            html.removeAttribute('data-theme');
+            
+            // Set the selected theme
+            if (theme !== 'dark') {
+                html.setAttribute('data-theme', theme);
+            }
+            
+            // Save preference to localStorage
+            localStorage.setItem('theme', theme);
+            
+            // Update selected state
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.theme === theme) {
+                    option.classList.add('selected');
+                }
+            });
+            
+            // Close dropdown
+            document.getElementById('mainDropdown').classList.remove('active');
+        }
+        
+        function toggleMainDropdown() {
+            const dropdown = document.getElementById('mainDropdown');
+            dropdown.classList.toggle('active');
+        }
+        
+        function toggleSubmenu(submenuId) {
+            const submenu = document.getElementById(submenuId);
+            const menuItem = submenu.previousElementSibling;
+            
+            // Close other submenus
+            document.querySelectorAll('.submenu').forEach(sm => {
+                if (sm.id !== submenuId) {
+                    sm.classList.remove('active');
+                    sm.previousElementSibling.classList.remove('active');
+                }
+            });
+            
+            // Toggle current submenu
+            submenu.classList.toggle('active');
+            menuItem.classList.toggle('active');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const themeSelector = document.querySelector('.theme-selector');
+            if (!themeSelector.contains(e.target)) {
+                document.getElementById('mainDropdown').classList.remove('active');
+                document.querySelectorAll('.submenu').forEach(sm => sm.classList.remove('active'));
+                document.querySelectorAll('.menu-item').forEach(mi => mi.classList.remove('active'));
+            }
+        });
+
+        // Load saved theme on page load
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+            
+            // Remove all theme attributes
+            html.removeAttribute('data-theme');
+            
+            // Set the selected theme
+            if (savedTheme !== 'dark') {
+                html.setAttribute('data-theme', savedTheme);
+            }
+            
+            // Update selected state
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.theme === savedTheme) {
+                    option.classList.add('selected');
+                }
+            });
+        }
+
         // Load settings on page load
-        document.addEventListener('DOMContentLoaded', loadSettings);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            loadSettings();
+        });
     </script>
 </body>
 </html>
