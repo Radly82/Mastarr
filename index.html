@@ -1006,9 +1006,26 @@
     </div>
 
     <script>
-        // Load settings from localStorage or use defaults
-        function loadConfig() {
-            const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+        // Load settings from file or localStorage
+        async function loadConfig() {
+            let settings = {};
+            
+            try {
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.loadSettings();
+                    if (result.success) {
+                        settings = result.settings || {};
+                    } else {
+                        console.error('Failed to load settings:', result.error);
+                    }
+                } else {
+                    // Fallback to localStorage for non-Electron environments (Docker)
+                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            }
             
             return {
                 sonarr: {
@@ -1031,27 +1048,34 @@
             };
         }
 
-        const config = loadConfig();
+        let config;
+        let SONARR_CONFIG;
+        let RADARR_CONFIG;
+        let SABNZBD_CONFIG;
 
-        const SONARR_CONFIG = {
-            url: config.sonarr.url,
-            tailscaleUrl: config.sonarr.tailscaleUrl,
-            apiKey: config.sonarr.apiKey,
-            defaultRootFolder: config.sonarr.defaultRootFolder
-        };
+        // Initialize config
+        loadConfig().then(loadedConfig => {
+            config = loadedConfig;
+            SONARR_CONFIG = {
+                url: config.sonarr.url,
+                tailscaleUrl: config.sonarr.tailscaleUrl,
+                apiKey: config.sonarr.apiKey,
+                defaultRootFolder: config.sonarr.defaultRootFolder
+            };
 
-        const RADARR_CONFIG = {
-            url: config.radarr.url,
-            tailscaleUrl: config.radarr.tailscaleUrl,
-            apiKey: config.radarr.apiKey,
-            defaultRootFolder: config.radarr.defaultRootFolder
-        };
+            RADARR_CONFIG = {
+                url: config.radarr.url,
+                tailscaleUrl: config.radarr.tailscaleUrl,
+                apiKey: config.radarr.apiKey,
+                defaultRootFolder: config.radarr.defaultRootFolder
+            };
 
-        const SABNZBD_CONFIG = {
-            url: config.sabnzbd.url,
-            tailscaleUrl: config.sabnzbd.tailscaleUrl,
-            apiKey: config.sabnzbd.apiKey
-        };
+            SABNZBD_CONFIG = {
+                url: config.sabnzbd.url,
+                tailscaleUrl: config.sabnzbd.tailscaleUrl,
+                apiKey: config.sabnzbd.apiKey
+            };
+        });
 
         function getServiceUrls(config) {
             return [config.url, config.tailscaleUrl].filter(Boolean);

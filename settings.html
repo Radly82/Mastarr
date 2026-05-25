@@ -217,6 +217,32 @@
             transform: translateY(0);
         }
 
+        .save-button.sonarr {
+            background: linear-gradient(90deg, var(--accent-sonarr), #00a8cc);
+        }
+
+        .save-button.radarr {
+            background: linear-gradient(90deg, var(--accent-radarr), #9c27b0);
+        }
+
+        .save-button.sabnzbd {
+            background: linear-gradient(90deg, var(--accent-sabnzbd), #ff5252);
+        }
+
+        .section-save-warning {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            color: #f44336;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .section-save-warning.show {
+            display: block;
+        }
+
         .success-message {
             background: rgba(76, 175, 80, 0.2);
             border: 1px solid rgba(76, 175, 80, 0.5);
@@ -238,10 +264,9 @@
         
         <h1>Settings</h1>
         
-        <div class="success-message" id="successMessage">Settings saved successfully!</div>
-        
         <div class="settings-section sonarr">
             <h2>📺 Sonarr Settings</h2>
+            <div class="section-save-warning" id="sonarrSaveWarning">Please select a default series directory before saving.</div>
             <div class="form-group">
                 <label for="sonarrUrl">Local Network URL</label>
                 <input type="text" id="sonarrUrl" placeholder="Enter local Sonarr URL" />
@@ -257,18 +282,20 @@
                 <input type="password" id="sonarrApiKey" placeholder="Enter API key" />
             </div>
             <div class="form-group">
-                <label for="sonarrDefaultRootFolder">Default Series Directory</label>
+                <label for="sonarrDefaultRootFolder">Default Series Directory *</label>
                 <select id="sonarrDefaultRootFolder">
-                    <option value="">Use first available Sonarr root folder</option>
+                    <option value="">Select a directory (required)</option>
                 </select>
                 <div class="button-row">
                     <button type="button" class="load-button" onclick="loadRootFolders('sonarr')">Load Sonarr Directories</button>
                 </div>
             </div>
+            <button class="save-button sonarr" onclick="saveSonarrSettings()">Save Sonarr Settings</button>
         </div>
         
         <div class="settings-section radarr">
             <h2>🎬 Radarr Settings</h2>
+            <div class="section-save-warning" id="radarrSaveWarning">Please select a default movie directory before saving.</div>
             <div class="form-group">
                 <label for="radarrUrl">Local Network URL</label>
                 <input type="text" id="radarrUrl" placeholder="Enter local Radarr URL" />
@@ -284,14 +311,15 @@
                 <input type="password" id="radarrApiKey" placeholder="Enter API key" />
             </div>
             <div class="form-group">
-                <label for="radarrDefaultRootFolder">Default Movie Directory</label>
+                <label for="radarrDefaultRootFolder">Default Movie Directory *</label>
                 <select id="radarrDefaultRootFolder">
-                    <option value="">Use first available Radarr root folder</option>
+                    <option value="">Select a directory (required)</option>
                 </select>
                 <div class="button-row">
                     <button type="button" class="load-button" onclick="loadRootFolders('radarr')">Load Radarr Directories</button>
                 </div>
             </div>
+            <button class="save-button radarr" onclick="saveRadarrSettings()">Save Radarr Settings</button>
         </div>
 
         <div class="settings-section sabnzbd">
@@ -310,6 +338,7 @@
                 <label for="sabnzbdApiKey">Sabnzbd API Key</label>
                 <input type="password" id="sabnzbdApiKey" placeholder="Enter API key" />
             </div>
+            <button class="save-button sabnzbd" onclick="saveSabnzbdSettings()">Save Sabnzbd Settings</button>
         </div>
 
         <div class="settings-section remote">
@@ -324,13 +353,28 @@
                 <li>Click the Test Connection button to confirm MastARR can reach each service.</li>
             </ol>
         </div>
-
-        <button class="save-button" onclick="saveSettings()">Save Settings</button>
     </div>
 
     <script>
-        function loadSettings() {
-            const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+        async function loadSettings() {
+            let settings = {};
+            
+            try {
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.loadSettings();
+                    if (result.success) {
+                        settings = result.settings || {};
+                    } else {
+                        console.error('Failed to load settings:', result.error);
+                    }
+                } else {
+                    // Fallback to localStorage for non-Electron environments (Docker)
+                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            }
             
             document.getElementById('sonarrUrl').value = settings.sonarrUrl || '';
             document.getElementById('sonarrTailscaleUrl').value = settings.sonarrTailscaleUrl || '';
@@ -345,34 +389,142 @@
             setDefaultRootFolderOption('radarrDefaultRootFolder', settings.radarrDefaultRootFolder || '');
         }
 
-        function saveSettings() {
-            const settings = {
-                sonarrUrl: document.getElementById('sonarrUrl').value,
-                sonarrTailscaleUrl: document.getElementById('sonarrTailscaleUrl').value,
-                sonarrApiKey: document.getElementById('sonarrApiKey').value,
-                sonarrDefaultRootFolder: document.getElementById('sonarrDefaultRootFolder').value,
-                radarrUrl: document.getElementById('radarrUrl').value,
-                radarrTailscaleUrl: document.getElementById('radarrTailscaleUrl').value,
-                radarrApiKey: document.getElementById('radarrApiKey').value,
-                radarrDefaultRootFolder: document.getElementById('radarrDefaultRootFolder').value,
-                sabnzbdUrl: document.getElementById('sabnzbdUrl').value,
-                sabnzbdTailscaleUrl: document.getElementById('sabnzbdTailscaleUrl').value,
-                sabnzbdApiKey: document.getElementById('sabnzbdApiKey').value
-            };
+        async function saveSonarrSettings() {
+            const rootFolder = document.getElementById('sonarrDefaultRootFolder').value;
+            if (!rootFolder) {
+                document.getElementById('sonarrSaveWarning').classList.add('show');
+                return;
+            }
+            document.getElementById('sonarrSaveWarning').classList.remove('show');
             
-            localStorage.setItem('appSettings', JSON.stringify(settings));
+            let settings = {};
+            try {
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.loadSettings();
+                    if (result.success) {
+                        settings = result.settings || {};
+                    }
+                } else {
+                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                }
+            } catch (error) {
+                console.error('Error loading settings before save:', error);
+                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            }
             
-            const successMessage = document.getElementById('successMessage');
-            successMessage.classList.add('show');
+            settings.sonarrUrl = document.getElementById('sonarrUrl').value;
+            settings.sonarrTailscaleUrl = document.getElementById('sonarrTailscaleUrl').value;
+            settings.sonarrApiKey = document.getElementById('sonarrApiKey').value;
+            settings.sonarrDefaultRootFolder = rootFolder;
             
-            setTimeout(() => {
-                successMessage.classList.remove('show');
-            }, 3000);
+            try {
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.saveSettings(settings);
+                    if (result.success) {
+                        alert('Sonarr settings saved successfully!');
+                    } else {
+                        alert('Failed to save settings: ' + result.error);
+                    }
+                } else {
+                    localStorage.setItem('appSettings', JSON.stringify(settings));
+                    alert('Sonarr settings saved successfully!');
+                }
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                localStorage.setItem('appSettings', JSON.stringify(settings));
+                alert('Sonarr settings saved successfully!');
+            }
+        }
+
+        async function saveRadarrSettings() {
+            const rootFolder = document.getElementById('radarrDefaultRootFolder').value;
+            if (!rootFolder) {
+                document.getElementById('radarrSaveWarning').classList.add('show');
+                return;
+            }
+            document.getElementById('radarrSaveWarning').classList.remove('show');
+            
+            let settings = {};
+            try {
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.loadSettings();
+                    if (result.success) {
+                        settings = result.settings || {};
+                    }
+                } else {
+                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                }
+            } catch (error) {
+                console.error('Error loading settings before save:', error);
+                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            }
+            
+            settings.radarrUrl = document.getElementById('radarrUrl').value;
+            settings.radarrTailscaleUrl = document.getElementById('radarrTailscaleUrl').value;
+            settings.radarrApiKey = document.getElementById('radarrApiKey').value;
+            settings.radarrDefaultRootFolder = rootFolder;
+            
+            try {
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.saveSettings(settings);
+                    if (result.success) {
+                        alert('Radarr settings saved successfully!');
+                    } else {
+                        alert('Failed to save settings: ' + result.error);
+                    }
+                } else {
+                    localStorage.setItem('appSettings', JSON.stringify(settings));
+                    alert('Radarr settings saved successfully!');
+                }
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                localStorage.setItem('appSettings', JSON.stringify(settings));
+                alert('Radarr settings saved successfully!');
+            }
+        }
+
+        async function saveSabnzbdSettings() {
+            let settings = {};
+            try {
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.loadSettings();
+                    if (result.success) {
+                        settings = result.settings || {};
+                    }
+                } else {
+                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                }
+            } catch (error) {
+                console.error('Error loading settings before save:', error);
+                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            }
+            
+            settings.sabnzbdUrl = document.getElementById('sabnzbdUrl').value;
+            settings.sabnzbdTailscaleUrl = document.getElementById('sabnzbdTailscaleUrl').value;
+            settings.sabnzbdApiKey = document.getElementById('sabnzbdApiKey').value;
+            
+            try {
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.saveSettings(settings);
+                    if (result.success) {
+                        alert('Sabnzbd settings saved successfully!');
+                    } else {
+                        alert('Failed to save settings: ' + result.error);
+                    }
+                } else {
+                    localStorage.setItem('appSettings', JSON.stringify(settings));
+                    alert('Sabnzbd settings saved successfully!');
+                }
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                localStorage.setItem('appSettings', JSON.stringify(settings));
+                alert('Sabnzbd settings saved successfully!');
+            }
         }
 
         function setDefaultRootFolderOption(selectId, value) {
             const select = document.getElementById(selectId);
-            select.innerHTML = '<option value="">Use first available root folder</option>';
+            select.innerHTML = '<option value="">Select a directory (required)</option>';
 
             if (value) {
                 select.innerHTML += `<option value="${value}" selected>${value}</option>`;
@@ -427,7 +579,7 @@
                 }
 
                 const rootFolders = await response.json();
-                select.innerHTML = '<option value="">Use first available root folder</option>';
+                select.innerHTML = '<option value="">Select a directory (required)</option>';
                 rootFolders.forEach(folder => {
                     const option = document.createElement('option');
                     option.value = folder.path;
