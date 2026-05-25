@@ -21,8 +21,8 @@ function createWindow() {
 }
 
 function getSettingsFilePath() {
-  const appPath = process.resourcesPath || app.getAppPath();
-  const settingsDir = path.join(appPath, 'setfile');
+  const userDataPath = app.getPath('userData');
+  const settingsDir = path.join(userDataPath, 'setfile');
   
   // Create setfile directory if it doesn't exist
   if (!fs.existsSync(settingsDir)) {
