@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>MastARR</Name>
+  <Repository>radly82/mastarr-docker:latest</Repository>
+  <Registry>https://hub.docker.com/r/radly82/mastarr-docker</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/radly82/mastarr</Support>
+  <Project>https://github.com/radly82/mastarr</Project>
+  <Overview>
+    MastARR is a modern web interface for searching and managing your media library with Radarr (movies), Sonarr (TV shows), and SABnzbd (downloads).
+    &#13;&#10;
+    &#13;&#10;Features:
+    &#13;&#10;- Dual Search: Search both Radarr (movies) and Sonarr (TV shows) simultaneously
+    &#13;&#10;- Fallback URLs: Configure a Local Network URL and a Tailscale IP URL per service — the app tries local first and falls back to Tailscale automatically
+    &#13;&#10;- SABnzbd Integration: View download progress and history with statistics
+    &#13;&#10;- Calendar View: See upcoming episodes and movie releases
+    &#13;&#10;- Modern UI: Clean, responsive interface with multiple themes
+    &#13;&#10;- Settings Management: Configure URLs and API keys through a built-in settings page
+    &#13;&#10;
+    &#13;&#10;Configuration: All settings (API keys, URLs) are saved in your browser&#39;s localStorage — nothing is stored server-side.
+  </Overview>
+  <Category>Media:Other</Category>
+  <WebUI>http://[IP]:[PORT:6969]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/Radly82/Mastarr/main/mastarr.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Radly82/Mastarr/main/MA.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled>1704067200</DateInstalled>
+  <DonateText/>
+  <DonateLink/>
+  <Description>MastARR is a modern web interface for searching and managing your media library with Radarr, Sonarr, and SABnzbd.</Description>
+
+  <Config Name="Container Port 1" Target="6969" Default="6969" Mode="tcp" Description="WebUI port (TCP)" Type="Port" Display="always" Required="true">6969</Config>
+  <Config Name="Container Port 2" Target="6969" Default="6969" Mode="udp" Description="WebUI port (UDP)" Type="Port" Display="always" Required="true">6969</Config>
+  <Config Name="Installed Location" Target="/data" Default="/mnt/user/appdata/" Mode="rw" Description="Host path where app data is stored." Type="Path" Display="always" Required="true"></Config>
+</Container>
