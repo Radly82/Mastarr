@@ -243,6 +243,31 @@
             display: block;
         }
 
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .import-button {
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .import-button:hover {
+            border-color: var(--accent-sonarr);
+            transform: translateY(-2px);
+        }
+
         .success-message {
             background: rgba(76, 175, 80, 0.2);
             border: 1px solid rgba(76, 175, 80, 0.5);
@@ -353,9 +378,42 @@
                 <li>Click the Test Connection button to confirm MastARR can reach each service.</li>
             </ol>
         </div>
+
+        <div class="action-buttons">
+            <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importSettings(this)" />
+            <button class="import-button" onclick="document.getElementById('importFile').click()">Import Settings</button>
+            <button class="save-button" onclick="saveAllSettings()">Save All Settings</button>
+        </div>
     </div>
 
     <script>
+        // Simple XOR encryption for API keys
+        const ENCRYPTION_KEY = 'MastARR2024SecureKey';
+        
+        function encrypt(text) {
+            if (!text) return '';
+            let result = '';
+            for (let i = 0; i < text.length; i++) {
+                result += String.fromCharCode(text.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length));
+            }
+            return btoa(result); // Base64 encode
+        }
+        
+        function decrypt(encoded) {
+            if (!encoded) return '';
+            try {
+                const text = atob(encoded); // Base64 decode
+                let result = '';
+                for (let i = 0; i < text.length; i++) {
+                    result += String.fromCharCode(text.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length));
+                }
+                return result;
+            } catch (error) {
+                console.error('Decryption error:', error);
+                return '';
+            }
+        }
+        
         async function loadSettings() {
             let settings = {};
             
@@ -375,6 +433,11 @@
                 console.error('Error loading settings:', error);
                 settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
             }
+            
+            // Decrypt API keys
+            if (settings.sonarrApiKey) settings.sonarrApiKey = decrypt(settings.sonarrApiKey);
+            if (settings.radarrApiKey) settings.radarrApiKey = decrypt(settings.radarrApiKey);
+            if (settings.sabnzbdApiKey) settings.sabnzbdApiKey = decrypt(settings.sabnzbdApiKey);
             
             document.getElementById('sonarrUrl').value = settings.sonarrUrl || '';
             document.getElementById('sonarrTailscaleUrl').value = settings.sonarrTailscaleUrl || '';
@@ -414,7 +477,7 @@
             
             settings.sonarrUrl = document.getElementById('sonarrUrl').value;
             settings.sonarrTailscaleUrl = document.getElementById('sonarrTailscaleUrl').value;
-            settings.sonarrApiKey = document.getElementById('sonarrApiKey').value;
+            settings.sonarrApiKey = encrypt(document.getElementById('sonarrApiKey').value);
             settings.sonarrDefaultRootFolder = rootFolder;
             
             try {
@@ -461,7 +524,7 @@
             
             settings.radarrUrl = document.getElementById('radarrUrl').value;
             settings.radarrTailscaleUrl = document.getElementById('radarrTailscaleUrl').value;
-            settings.radarrApiKey = document.getElementById('radarrApiKey').value;
+            settings.radarrApiKey = encrypt(document.getElementById('radarrApiKey').value);
             settings.radarrDefaultRootFolder = rootFolder;
             
             try {
@@ -501,7 +564,7 @@
             
             settings.sabnzbdUrl = document.getElementById('sabnzbdUrl').value;
             settings.sabnzbdTailscaleUrl = document.getElementById('sabnzbdTailscaleUrl').value;
-            settings.sabnzbdApiKey = document.getElementById('sabnzbdApiKey').value;
+            settings.sabnzbdApiKey = encrypt(document.getElementById('sabnzbdApiKey').value);
             
             try {
                 if (window.electronAPI) {
@@ -528,6 +591,101 @@
 
             if (value) {
                 select.innerHTML += `<option value="${value}" selected>${value}</option>`;
+            }
+        }
+
+        function importSettings(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const settings = JSON.parse(e.target.result);
+                    
+                    // Decrypt API keys if they're encrypted
+                    const sonarrKey = settings.sonarrApiKey ? decrypt(settings.sonarrApiKey) : settings.sonarrApiKey;
+                    const radarrKey = settings.radarrApiKey ? decrypt(settings.radarrApiKey) : settings.radarrApiKey;
+                    const sabnzbdKey = settings.sabnzbdApiKey ? decrypt(settings.sabnzbdApiKey) : settings.sabnzbdApiKey;
+                    
+                    // Fill Sonarr fields
+                    document.getElementById('sonarrUrl').value = settings.sonarrUrl || '';
+                    document.getElementById('sonarrTailscaleUrl').value = settings.sonarrTailscaleUrl || '';
+                    document.getElementById('sonarrApiKey').value = sonarrKey || '';
+                    setDefaultRootFolderOption('sonarrDefaultRootFolder', settings.sonarrDefaultRootFolder || '');
+                    
+                    // Fill Radarr fields
+                    document.getElementById('radarrUrl').value = settings.radarrUrl || '';
+                    document.getElementById('radarrTailscaleUrl').value = settings.radarrTailscaleUrl || '';
+                    document.getElementById('radarrApiKey').value = radarrKey || '';
+                    setDefaultRootFolderOption('radarrDefaultRootFolder', settings.radarrDefaultRootFolder || '');
+                    
+                    // Fill Sabnzbd fields
+                    document.getElementById('sabnzbdUrl').value = settings.sabnzbdUrl || '';
+                    document.getElementById('sabnzbdTailscaleUrl').value = settings.sabnzbdTailscaleUrl || '';
+                    document.getElementById('sabnzbdApiKey').value = sabnzbdKey || '';
+                    
+                    alert('Settings imported successfully! Please review and click "Save All Settings" to save.');
+                } catch (error) {
+                    alert('Error importing settings: Invalid JSON file format.');
+                    console.error('Import error:', error);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset file input
+            input.value = '';
+        }
+
+        async function saveAllSettings() {
+            const sonarrRootFolder = document.getElementById('sonarrDefaultRootFolder').value;
+            const radarrRootFolder = document.getElementById('radarrDefaultRootFolder').value;
+            
+            // Validate required directories
+            if (!sonarrRootFolder) {
+                document.getElementById('sonarrSaveWarning').classList.add('show');
+                alert('Please select a default series directory for Sonarr before saving.');
+                return;
+            }
+            if (!radarrRootFolder) {
+                document.getElementById('radarrSaveWarning').classList.add('show');
+                alert('Please select a default movie directory for Radarr before saving.');
+                return;
+            }
+            
+            document.getElementById('sonarrSaveWarning').classList.remove('show');
+            document.getElementById('radarrSaveWarning').classList.remove('show');
+            
+            const settings = {
+                sonarrUrl: document.getElementById('sonarrUrl').value,
+                sonarrTailscaleUrl: document.getElementById('sonarrTailscaleUrl').value,
+                sonarrApiKey: encrypt(document.getElementById('sonarrApiKey').value),
+                sonarrDefaultRootFolder: sonarrRootFolder,
+                radarrUrl: document.getElementById('radarrUrl').value,
+                radarrTailscaleUrl: document.getElementById('radarrTailscaleUrl').value,
+                radarrApiKey: encrypt(document.getElementById('radarrApiKey').value),
+                radarrDefaultRootFolder: radarrRootFolder,
+                sabnzbdUrl: document.getElementById('sabnzbdUrl').value,
+                sabnzbdTailscaleUrl: document.getElementById('sabnzbdTailscaleUrl').value,
+                sabnzbdApiKey: encrypt(document.getElementById('sabnzbdApiKey').value)
+            };
+            
+            try {
+                if (window.electronAPI) {
+                    const result = await window.electronAPI.saveSettings(settings);
+                    if (result.success) {
+                        alert('All settings saved successfully!');
+                    } else {
+                        alert('Failed to save settings: ' + result.error);
+                    }
+                } else {
+                    localStorage.setItem('appSettings', JSON.stringify(settings));
+                    alert('All settings saved successfully!');
+                }
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                localStorage.setItem('appSettings', JSON.stringify(settings));
+                alert('All settings saved successfully!');
             }
         }
 

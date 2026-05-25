@@ -1027,6 +1027,27 @@
                 settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
             }
             
+            // Decrypt API keys
+            const ENCRYPTION_KEY = 'MastARR2024SecureKey';
+            function decrypt(encoded) {
+                if (!encoded) return '';
+                try {
+                    const text = atob(encoded);
+                    let result = '';
+                    for (let i = 0; i < text.length; i++) {
+                        result += String.fromCharCode(text.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length));
+                    }
+                    return result;
+                } catch (error) {
+                    console.error('Decryption error:', error);
+                    return encoded; // Return as-is if decryption fails
+                }
+            }
+            
+            if (settings.sonarrApiKey) settings.sonarrApiKey = decrypt(settings.sonarrApiKey);
+            if (settings.radarrApiKey) settings.radarrApiKey = decrypt(settings.radarrApiKey);
+            if (settings.sabnzbdApiKey) settings.sabnzbdApiKey = decrypt(settings.sabnzbdApiKey);
+            
             return {
                 sonarr: {
                     url: settings.sonarrUrl || '',
