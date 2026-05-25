@@ -915,7 +915,7 @@
         
         <div class="search-container">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search for Movies or Series..." />
+                <input type="text" id="searchInput" placeholder="Search for Movies or Series..." onkeypress="if(event.key === 'Enter') searchBoth()" onclick="this.focus()" onmousedown="this.focus()" />
                 <button id="searchBtn" onclick="searchBoth()">Search</button>
             </div>
             <div id="errorContainer"></div>
@@ -1006,47 +1006,16 @@
     </div>
 
     <script>
-        // Load settings from file or localStorage
+        // Load settings from localStorage
         async function loadConfig() {
             let settings = {};
             
             try {
-                if (window.electronAPI) {
-                    const result = await window.electronAPI.loadSettings();
-                    if (result.success) {
-                        settings = result.settings || {};
-                    } else {
-                        console.error('Failed to load settings:', result.error);
-                    }
-                } else {
-                    // Fallback to localStorage for non-Electron environments (Docker)
-                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-                }
+                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
             } catch (error) {
                 console.error('Error loading settings:', error);
-                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                settings = {};
             }
-            
-            // Decrypt API keys
-            const ENCRYPTION_KEY = 'MastARR2024SecureKey';
-            function decrypt(encoded) {
-                if (!encoded) return '';
-                try {
-                    const text = atob(encoded);
-                    let result = '';
-                    for (let i = 0; i < text.length; i++) {
-                        result += String.fromCharCode(text.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length));
-                    }
-                    return result;
-                } catch (error) {
-                    console.error('Decryption error:', error);
-                    return encoded; // Return as-is if decryption fails
-                }
-            }
-            
-            if (settings.sonarrApiKey) settings.sonarrApiKey = decrypt(settings.sonarrApiKey);
-            if (settings.radarrApiKey) settings.radarrApiKey = decrypt(settings.radarrApiKey);
-            if (settings.sabnzbdApiKey) settings.sabnzbdApiKey = decrypt(settings.sabnzbdApiKey);
             
             return {
                 sonarr: {
@@ -1074,7 +1043,7 @@
         let RADARR_CONFIG;
         let SABNZBD_CONFIG;
 
-        // Initialize config
+        // Initialize config with error handling
         loadConfig().then(loadedConfig => {
             config = loadedConfig;
             SONARR_CONFIG = {
@@ -1096,6 +1065,17 @@
                 tailscaleUrl: config.sabnzbd.tailscaleUrl,
                 apiKey: config.sabnzbd.apiKey
             };
+        }).catch(error => {
+            console.error('Error loading config:', error);
+            // Use empty config as fallback
+            config = {
+                sonarr: { url: '', tailscaleUrl: '', apiKey: '', defaultRootFolder: '' },
+                radarr: { url: '', tailscaleUrl: '', apiKey: '', defaultRootFolder: '' },
+                sabnzbd: { url: '', tailscaleUrl: '', apiKey: '' }
+            };
+            SONARR_CONFIG = config.sonarr;
+            RADARR_CONFIG = config.radarr;
+            SABNZBD_CONFIG = config.sabnzbd;
         });
 
         function getServiceUrls(config) {
@@ -1907,11 +1887,81 @@
         }
 
         // Allow Enter key to trigger search
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchBoth();
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                // Ensure input is always enabled
+                searchInput.disabled = false;
+                searchInput.readOnly = false;
+                
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchBoth();
+                    }
+                });
+                
+                console.log('Search input initialized');
+            } else {
+                console.error('Search input not found');
             }
         });
+
+        function copyDebugInfo() {
+            const searchInput = document.getElementById('searchInput');
+            const debugInfo = {
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                searchInput: {
+                    exists: !!searchInput,
+                    disabled: searchInput ? searchInput.disabled : 'N/A',
+                    readOnly: searchInput ? searchInput.readOnly : 'N/A',
+                    value: searchInput ? searchInput.value : 'N/A',
+                    focused: document.activeElement === searchInput
+                },
+                config: {
+                    sonarrUrl: SONARR_CONFIG ? SONARR_CONFIG.url : 'Not loaded',
+                    radarrUrl: RADARR_CONFIG ? RADARR_CONFIG.url : 'Not loaded',
+                    sabnzbdUrl: SABNZBD_CONFIG ? SABNZBD_CONFIG.url : 'Not loaded',
+                    sonarrApiKey: SONARR_CONFIG ? (SONARR_CONFIG.apiKey ? 'Present (' + SONARR_CONFIG.apiKey.length + ' chars)' : 'Missing') : 'Not loaded',
+                    radarrApiKey: RADARR_CONFIG ? (RADARR_CONFIG.apiKey ? 'Present (' + RADARR_CONFIG.apiKey.length + ' chars)' : 'Missing') : 'Not loaded',
+                    sabnzbdApiKey: SABNZBD_CONFIG ? (SABNZBD_CONFIG.apiKey ? 'Present (' + SABNZBD_CONFIG.apiKey.length + ' chars)' : 'Missing') : 'Not loaded'
+                },
+                electron: typeof window.electronAPI !== 'undefined',
+                localStorage: {
+                    appSettings: localStorage.getItem('appSettings') ? 'Present' : 'Missing'
+                }
+            };
+            
+            const debugString = JSON.stringify(debugInfo, null, 2);
+            
+            // Try clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(debugString).then(() => {
+                    alert('Debug info copied to clipboard! Paste it here.');
+                }).catch(err => {
+                    console.error('Failed to copy debug info:', err);
+                    showDebugInAlert(debugString);
+                });
+            } else {
+                // Fallback: show in alert
+                showDebugInAlert(debugString);
+            }
+        }
+
+        function showDebugInAlert(debugString) {
+            // Try to use Electron clipboard if available
+            if (window.electronAPI && window.electronAPI.writeToClipboard) {
+                window.electronAPI.writeToClipboard(debugString).then(() => {
+                    alert('Debug info copied to clipboard! Paste it here.');
+                }).catch(err => {
+                    console.error('Failed to copy via Electron API:', err);
+                    alert('Debug info:\n\n' + debugString);
+                });
+            } else {
+                alert('Debug info:\n\n' + debugString);
+            }
+        }
 
         // Modal functions for cover art
         let currentModalItem = null;
