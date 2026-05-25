@@ -365,6 +365,13 @@
             font-size: 0.9rem;
         }
 
+        .result-stats {
+            color: var(--accent-sonarr);
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+
         .result-overview {
             color: var(--text-secondary);
             font-size: 0.9rem;
@@ -812,11 +819,53 @@
 
         .result-item {
             cursor: pointer;
+            padding: 1rem;
+            position: relative;
+        }
+
+        .result-checkbox-wrapper {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+        }
+
+        .result-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--accent-radarr);
+        }
+
+        .result-content {
+            margin-left: 2rem;
         }
 
         .result-item:hover {
             background: var(--bg-secondary);
             transform: translateX(5px);
+        }
+
+        .bulk-add-btn {
+            width: 100%;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--accent-radarr);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bulk-add-btn:hover {
+            opacity: 0.9;
+        }
+
+        .bulk-add-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         @media (max-width: 768px) {
@@ -1342,7 +1391,7 @@
                     btn.classList.add('error');
                     setTimeout(() => {
                         btn.disabled = false;
-                        btn.textContent = 'Add to Sonarr';
+                        btn.textContent = 'Add Series';
                         btn.classList.remove('error');
                     }, 2000);
                     return;
@@ -1449,7 +1498,7 @@
                     btn.classList.add('error');
                     setTimeout(() => {
                         btn.disabled = false;
-                        btn.textContent = 'Add to Radarr';
+                        btn.textContent = 'Add Movie';
                         btn.classList.remove('error');
                     }, 2000);
                     return;
@@ -1536,6 +1585,9 @@
             }
         }
 
+        // Track selected items for bulk add (Radarr only)
+        let selectedRadarrItems = new Set();
+
         function displaySonarrResults(results) {
             const container = document.getElementById('sonarrResults');
             
@@ -1544,14 +1596,18 @@
                 return;
             }
 
-            container.innerHTML = results.map(item => `
+            container.innerHTML = results.map(item => {
+                const seasonCount = item.seasons ? item.seasons.length : 0;
+                
+                return `
                 <div class="result-item" onclick="showCover(${JSON.stringify(item).replace(/"/g, '&quot;')}, 'sonarr')">
                     <div class="result-title">${item.title || 'Unknown'}</div>
                     <div class="result-year">${item.year ? `Year: ${item.year}` : ''} ${item.status ? `| Status: ${item.status}` : ''}</div>
+                    ${seasonCount > 0 ? `<div class="result-stats">${seasonCount} Season${seasonCount > 1 ? 's' : ''}</div>` : ''}
                     ${item.overview ? `<div class="result-overview">${item.overview.substring(0, 200)}${item.overview.length > 200 ? '...' : ''}</div>` : ''}
-                    <button class="download-btn" onclick="event.stopPropagation(); addSeries(${JSON.stringify(item).replace(/"/g, '&quot;')})" data-id="sonarr-${item.tvdbId || item.title}">Add to Sonarr</button>
+                    <button class="download-btn" onclick="event.stopPropagation(); addSeries(${JSON.stringify(item).replace(/"/g, '&quot;')})" data-id="sonarr-${item.tvdbId || item.title}">Add Series</button>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         function displayRadarrResults(results) {
@@ -1564,12 +1620,130 @@
 
             container.innerHTML = results.map(item => `
                 <div class="result-item" onclick="showCover(${JSON.stringify(item).replace(/"/g, '&quot;')}, 'radarr')">
-                    <div class="result-title">${item.title || 'Unknown'}</div>
-                    <div class="result-year">${item.year ? `Year: ${item.year}` : ''} ${item.status ? `| Status: ${item.status}` : ''}</div>
-                    ${item.overview ? `<div class="result-overview">${item.overview.substring(0, 200)}${item.overview.length > 200 ? '...' : ''}</div>` : ''}
-                    <button class="download-btn radarr" onclick="event.stopPropagation(); addMovie(${JSON.stringify(item).replace(/"/g, '&quot;')})" data-id="radarr-${item.tmdbId || item.title}">Add to Radarr</button>
+                    <div class="result-checkbox-wrapper">
+                        <input type="checkbox" class="result-checkbox" data-type="radarr" data-id="${item.tmdbId || item.title}" data-item='${JSON.stringify(item).replace(/'/g, "\\'")}' onclick="event.stopPropagation(); toggleSelection('radarr', '${item.tmdbId || item.title}', this)">
+                    </div>
+                    <div class="result-content">
+                        <div class="result-title">${item.title || 'Unknown'}</div>
+                        <div class="result-year">${item.year ? `Year: ${item.year}` : ''} ${item.status ? `| Status: ${item.status}` : ''}</div>
+                        ${item.overview ? `<div class="result-overview">${item.overview.substring(0, 200)}${item.overview.length > 200 ? '...' : ''}</div>` : ''}
+                    </div>
+                    <button class="download-btn radarr" onclick="event.stopPropagation(); addMovie(${JSON.stringify(item).replace(/"/g, '&quot;')})" data-id="radarr-${item.tmdbId || item.title}">Add Movie</button>
                 </div>
             `).join('');
+            
+            updateBulkAddButton();
+        }
+
+        function toggleSelection(type, id, checkbox) {
+            const itemData = JSON.parse(checkbox.dataset.item);
+            
+            if (type === 'radarr') {
+                if (checkbox.checked) {
+                    selectedRadarrItems.set(id, itemData);
+                } else {
+                    selectedRadarrItems.delete(id);
+                }
+            }
+            
+            updateBulkAddButton();
+        }
+
+        function updateBulkAddButton() {
+            const radarrContainer = document.getElementById('radarrResults');
+            
+            // Add bulk add button for Radarr if items are selected
+            let radarrBulkBtn = document.getElementById('radarrBulkAddBtn');
+            if (selectedRadarrItems.size > 0) {
+                if (!radarrBulkBtn) {
+                    radarrBulkBtn = document.createElement('button');
+                    radarrBulkBtn.id = 'radarrBulkAddBtn';
+                    radarrBulkBtn.className = 'bulk-add-btn';
+                    radarrBulkBtn.onclick = bulkAddRadarr;
+                    radarrContainer.parentNode.insertBefore(radarrBulkBtn, radarrContainer.nextSibling);
+                }
+                radarrBulkBtn.textContent = `Add ${selectedRadarrItems.size} Movie${selectedRadarrItems.size > 1 ? 's' : ''} to Radarr`;
+            } else if (radarrBulkBtn) {
+                radarrBulkBtn.remove();
+            }
+        }
+
+        async function bulkAddRadarr() {
+            if (selectedRadarrItems.size === 0) return;
+            
+            const btn = document.getElementById('radarrBulkAddBtn');
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+            
+            const items = Array.from(selectedRadarrItems.values());
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (const movie of items) {
+                try {
+                    // Check if movie already exists
+                    const existingMovies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
+                    const existing = existingMovies.find(m => m.tmdbId === movie.tmdbId);
+                    
+                    if (existing) {
+                        failCount++;
+                        continue;
+                    }
+                    
+                    const [rootFolders, qualityProfiles] = await Promise.all([
+                        fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/rootfolder?apiKey=${RADARR_CONFIG.apiKey}`),
+                        fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/qualityprofile?apiKey=${RADARR_CONFIG.apiKey}`)
+                    ]);
+                    
+                    const rootFolder = RADARR_CONFIG.defaultRootFolder || rootFolders[0]?.path || '/movies';
+                    const qualityProfileId = qualityProfiles[0]?.id || 1;
+                    
+                    const movieData = {
+                        ...movie,
+                        qualityProfileId: qualityProfileId,
+                        monitored: true,
+                        rootFolderPath: rootFolder,
+                        addOptions: {
+                            searchForMovie: true
+                        }
+                    };
+                    
+                    delete movieData.id;
+                    delete movieData.movieFile;
+                    delete movieData.hasFile;
+                    
+                    const response = await fetchWithFallback(
+                        RADARR_CONFIG,
+                        `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(movieData)
+                        }
+                    );
+                    
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                    }
+                } catch (error) {
+                    console.error('Error adding movie:', error);
+                    failCount++;
+                }
+            }
+            
+            btn.textContent = `Added ${successCount}, Failed ${failCount}`;
+            btn.classList.add(successCount > 0 ? 'success' : 'error');
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                selectedRadarrItems.clear();
+                document.querySelectorAll('.result-checkbox[data-type="radarr"]').forEach(cb => cb.checked = false);
+                updateBulkAddButton();
+            }, 3000);
         }
 
         function showError(message) {
@@ -1661,7 +1835,7 @@
                     if (type === 'radarr') {
                         downloadBtn.classList.add('radarr');
                     }
-                    downloadBtn.textContent = type === 'radarr' ? 'Add to Radarr' : 'Add to Sonarr';
+                    downloadBtn.textContent = type === 'radarr' ? 'Add Movie' : 'Add Series';
                 }
             } catch (error) {
                 console.error('Error checking library status:', error);
