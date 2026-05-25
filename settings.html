@@ -387,57 +387,15 @@
     </div>
 
     <script>
-        // Simple XOR encryption for API keys
-        const ENCRYPTION_KEY = 'MastARR2024SecureKey';
-        
-        function encrypt(text) {
-            if (!text) return '';
-            let result = '';
-            for (let i = 0; i < text.length; i++) {
-                result += String.fromCharCode(text.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length));
-            }
-            return btoa(result); // Base64 encode
-        }
-        
-        function decrypt(encoded) {
-            if (!encoded) return '';
-            try {
-                const text = atob(encoded); // Base64 decode
-                let result = '';
-                for (let i = 0; i < text.length; i++) {
-                    result += String.fromCharCode(text.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length));
-                }
-                return result;
-            } catch (error) {
-                console.error('Decryption error:', error);
-                return '';
-            }
-        }
-        
         async function loadSettings() {
             let settings = {};
             
             try {
-                if (window.electronAPI) {
-                    const result = await window.electronAPI.loadSettings();
-                    if (result.success) {
-                        settings = result.settings || {};
-                    } else {
-                        console.error('Failed to load settings:', result.error);
-                    }
-                } else {
-                    // Fallback to localStorage for non-Electron environments (Docker)
-                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-                }
+                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
             } catch (error) {
                 console.error('Error loading settings:', error);
-                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                settings = {};
             }
-            
-            // Decrypt API keys
-            if (settings.sonarrApiKey) settings.sonarrApiKey = decrypt(settings.sonarrApiKey);
-            if (settings.radarrApiKey) settings.radarrApiKey = decrypt(settings.radarrApiKey);
-            if (settings.sabnzbdApiKey) settings.sabnzbdApiKey = decrypt(settings.sabnzbdApiKey);
             
             document.getElementById('sonarrUrl').value = settings.sonarrUrl || '';
             document.getElementById('sonarrTailscaleUrl').value = settings.sonarrTailscaleUrl || '';
@@ -460,43 +418,15 @@
             }
             document.getElementById('sonarrSaveWarning').classList.remove('show');
             
-            let settings = {};
-            try {
-                if (window.electronAPI) {
-                    const result = await window.electronAPI.loadSettings();
-                    if (result.success) {
-                        settings = result.settings || {};
-                    }
-                } else {
-                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-                }
-            } catch (error) {
-                console.error('Error loading settings before save:', error);
-                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-            }
+            let settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
             
             settings.sonarrUrl = document.getElementById('sonarrUrl').value;
             settings.sonarrTailscaleUrl = document.getElementById('sonarrTailscaleUrl').value;
-            settings.sonarrApiKey = encrypt(document.getElementById('sonarrApiKey').value);
+            settings.sonarrApiKey = document.getElementById('sonarrApiKey').value;
             settings.sonarrDefaultRootFolder = rootFolder;
             
-            try {
-                if (window.electronAPI) {
-                    const result = await window.electronAPI.saveSettings(settings);
-                    if (result.success) {
-                        alert('Sonarr settings saved successfully!');
-                    } else {
-                        alert('Failed to save settings: ' + result.error);
-                    }
-                } else {
-                    localStorage.setItem('appSettings', JSON.stringify(settings));
-                    alert('Sonarr settings saved successfully!');
-                }
-            } catch (error) {
-                console.error('Error saving settings:', error);
-                localStorage.setItem('appSettings', JSON.stringify(settings));
-                alert('Sonarr settings saved successfully!');
-            }
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+            alert('Sonarr settings saved successfully!');
         }
 
         async function saveRadarrSettings() {
@@ -507,82 +437,26 @@
             }
             document.getElementById('radarrSaveWarning').classList.remove('show');
             
-            let settings = {};
-            try {
-                if (window.electronAPI) {
-                    const result = await window.electronAPI.loadSettings();
-                    if (result.success) {
-                        settings = result.settings || {};
-                    }
-                } else {
-                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-                }
-            } catch (error) {
-                console.error('Error loading settings before save:', error);
-                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-            }
+            let settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
             
             settings.radarrUrl = document.getElementById('radarrUrl').value;
             settings.radarrTailscaleUrl = document.getElementById('radarrTailscaleUrl').value;
-            settings.radarrApiKey = encrypt(document.getElementById('radarrApiKey').value);
+            settings.radarrApiKey = document.getElementById('radarrApiKey').value;
             settings.radarrDefaultRootFolder = rootFolder;
             
-            try {
-                if (window.electronAPI) {
-                    const result = await window.electronAPI.saveSettings(settings);
-                    if (result.success) {
-                        alert('Radarr settings saved successfully!');
-                    } else {
-                        alert('Failed to save settings: ' + result.error);
-                    }
-                } else {
-                    localStorage.setItem('appSettings', JSON.stringify(settings));
-                    alert('Radarr settings saved successfully!');
-                }
-            } catch (error) {
-                console.error('Error saving settings:', error);
-                localStorage.setItem('appSettings', JSON.stringify(settings));
-                alert('Radarr settings saved successfully!');
-            }
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+            alert('Radarr settings saved successfully!');
         }
 
         async function saveSabnzbdSettings() {
-            let settings = {};
-            try {
-                if (window.electronAPI) {
-                    const result = await window.electronAPI.loadSettings();
-                    if (result.success) {
-                        settings = result.settings || {};
-                    }
-                } else {
-                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-                }
-            } catch (error) {
-                console.error('Error loading settings before save:', error);
-                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
-            }
+            let settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
             
             settings.sabnzbdUrl = document.getElementById('sabnzbdUrl').value;
             settings.sabnzbdTailscaleUrl = document.getElementById('sabnzbdTailscaleUrl').value;
-            settings.sabnzbdApiKey = encrypt(document.getElementById('sabnzbdApiKey').value);
+            settings.sabnzbdApiKey = document.getElementById('sabnzbdApiKey').value;
             
-            try {
-                if (window.electronAPI) {
-                    const result = await window.electronAPI.saveSettings(settings);
-                    if (result.success) {
-                        alert('Sabnzbd settings saved successfully!');
-                    } else {
-                        alert('Failed to save settings: ' + result.error);
-                    }
-                } else {
-                    localStorage.setItem('appSettings', JSON.stringify(settings));
-                    alert('Sabnzbd settings saved successfully!');
-                }
-            } catch (error) {
-                console.error('Error saving settings:', error);
-                localStorage.setItem('appSettings', JSON.stringify(settings));
-                alert('Sabnzbd settings saved successfully!');
-            }
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+            alert('Sabnzbd settings saved successfully!');
         }
 
         function setDefaultRootFolderOption(selectId, value) {
@@ -603,27 +477,22 @@
                 try {
                     const settings = JSON.parse(e.target.result);
                     
-                    // Decrypt API keys if they're encrypted
-                    const sonarrKey = settings.sonarrApiKey ? decrypt(settings.sonarrApiKey) : settings.sonarrApiKey;
-                    const radarrKey = settings.radarrApiKey ? decrypt(settings.radarrApiKey) : settings.radarrApiKey;
-                    const sabnzbdKey = settings.sabnzbdApiKey ? decrypt(settings.sabnzbdApiKey) : settings.sabnzbdApiKey;
-                    
                     // Fill Sonarr fields
                     document.getElementById('sonarrUrl').value = settings.sonarrUrl || '';
                     document.getElementById('sonarrTailscaleUrl').value = settings.sonarrTailscaleUrl || '';
-                    document.getElementById('sonarrApiKey').value = sonarrKey || '';
+                    document.getElementById('sonarrApiKey').value = settings.sonarrApiKey || '';
                     setDefaultRootFolderOption('sonarrDefaultRootFolder', settings.sonarrDefaultRootFolder || '');
                     
                     // Fill Radarr fields
                     document.getElementById('radarrUrl').value = settings.radarrUrl || '';
                     document.getElementById('radarrTailscaleUrl').value = settings.radarrTailscaleUrl || '';
-                    document.getElementById('radarrApiKey').value = radarrKey || '';
+                    document.getElementById('radarrApiKey').value = settings.radarrApiKey || '';
                     setDefaultRootFolderOption('radarrDefaultRootFolder', settings.radarrDefaultRootFolder || '');
                     
                     // Fill Sabnzbd fields
                     document.getElementById('sabnzbdUrl').value = settings.sabnzbdUrl || '';
                     document.getElementById('sabnzbdTailscaleUrl').value = settings.sabnzbdTailscaleUrl || '';
-                    document.getElementById('sabnzbdApiKey').value = sabnzbdKey || '';
+                    document.getElementById('sabnzbdApiKey').value = settings.sabnzbdApiKey || '';
                     
                     alert('Settings imported successfully! Please review and click "Save All Settings" to save.');
                 } catch (error) {
@@ -659,34 +528,19 @@
             const settings = {
                 sonarrUrl: document.getElementById('sonarrUrl').value,
                 sonarrTailscaleUrl: document.getElementById('sonarrTailscaleUrl').value,
-                sonarrApiKey: encrypt(document.getElementById('sonarrApiKey').value),
+                sonarrApiKey: document.getElementById('sonarrApiKey').value,
                 sonarrDefaultRootFolder: sonarrRootFolder,
                 radarrUrl: document.getElementById('radarrUrl').value,
                 radarrTailscaleUrl: document.getElementById('radarrTailscaleUrl').value,
-                radarrApiKey: encrypt(document.getElementById('radarrApiKey').value),
+                radarrApiKey: document.getElementById('radarrApiKey').value,
                 radarrDefaultRootFolder: radarrRootFolder,
                 sabnzbdUrl: document.getElementById('sabnzbdUrl').value,
                 sabnzbdTailscaleUrl: document.getElementById('sabnzbdTailscaleUrl').value,
-                sabnzbdApiKey: encrypt(document.getElementById('sabnzbdApiKey').value)
+                sabnzbdApiKey: document.getElementById('sabnzbdApiKey').value
             };
             
-            try {
-                if (window.electronAPI) {
-                    const result = await window.electronAPI.saveSettings(settings);
-                    if (result.success) {
-                        alert('All settings saved successfully!');
-                    } else {
-                        alert('Failed to save settings: ' + result.error);
-                    }
-                } else {
-                    localStorage.setItem('appSettings', JSON.stringify(settings));
-                    alert('All settings saved successfully!');
-                }
-            } catch (error) {
-                console.error('Error saving settings:', error);
-                localStorage.setItem('appSettings', JSON.stringify(settings));
-                alert('All settings saved successfully!');
-            }
+            localStorage.setItem('appSettings', JSON.stringify(settings));
+            alert('All settings saved successfully!');
         }
 
         function getServiceUrls(type) {
