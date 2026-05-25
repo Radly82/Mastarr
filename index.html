@@ -254,12 +254,6 @@
             transform: none;
         }
 
-        .results-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-        }
-
         .results-section {
             background: var(--bg-secondary);
             border-radius: 16px;
@@ -398,6 +392,62 @@
             text-align: center;
             padding: 2rem;
             color: var(--text-secondary);
+        }
+
+        .results-container {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            display: block;
+        }
+
+        .results-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .results-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .results-tab {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .results-tab:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-sonarr);
+        }
+
+        .results-tab.active {
+            background: linear-gradient(135deg, var(--accent-sonarr), #0099cc);
+            color: white;
+            border-color: var(--accent-sonarr);
+        }
+
+        .results-tab.active:hover {
+            background: linear-gradient(135deg, var(--accent-sonarr), #0099cc);
+            opacity: 0.9;
+        }
+
+        .service-icon-small {
+            width: 20px;
+            height: 20px;
         }
 
         .calendar-container {
@@ -869,10 +919,6 @@
         }
 
         @media (max-width: 768px) {
-            .results-container {
-                grid-template-columns: 1fr;
-            }
-            
             h1 {
                 font-size: 1.8rem;
             }
@@ -965,24 +1011,24 @@
         </div>
 
         <div class="results-container">
-            <div class="results-section">
-                <div class="results-header sonarr-header">
-                    <img src="https://raw.githubusercontent.com/Sonarr/Sonarr/develop/Logo/Sonarr.svg" alt="Sonarr" class="service-icon" />
-                    <h2>Series</h2>
+            <div class="results-header">
+                <h2>Results</h2>
+            </div>
+            <div class="results-tabs">
+                <div class="results-tab active" id="seriesTab" onclick="switchResultsTab('series')">
+                    <img src="https://raw.githubusercontent.com/Sonarr/Sonarr/develop/Logo/Sonarr.svg" alt="Sonarr" class="service-icon-small" />
+                    <span id="seriesCount">Series (0)</span>
                 </div>
-                <div id="sonarrResults" class="results-list">
-                    <div class="no-results">Search for TV shows to see results here</div>
+                <div class="results-tab" id="moviesTab" onclick="switchResultsTab('movies')">
+                    <img src="https://raw.githubusercontent.com/Radarr/Radarr/develop/Logo/Radarr.svg" alt="Radarr" class="service-icon-small" />
+                    <span id="moviesCount">Movies (0)</span>
                 </div>
             </div>
-
-            <div class="results-section">
-                <div class="results-header radarr-header">
-                    <img src="https://raw.githubusercontent.com/Radarr/Radarr/develop/Logo/Radarr.svg" alt="Radarr" class="service-icon" />
-                    <h2>Movies</h2>
-                </div>
-                <div id="radarrResults" class="results-list">
-                    <div class="no-results">Search for movies to see results here</div>
-                </div>
+            <div id="sonarrResults" class="results-list">
+                <div class="no-results">Search for TV shows to see results here</div>
+            </div>
+            <div id="radarrResults" class="results-list" style="display: none;">
+                <div class="no-results">Search for movies to see results here</div>
             </div>
         </div>
     </div>
@@ -1191,6 +1237,26 @@
         // Initialize theme on page load
         document.addEventListener('DOMContentLoaded', loadTheme);
 
+        // Results tab switching
+        function switchResultsTab(tab) {
+            const seriesTab = document.getElementById('seriesTab');
+            const moviesTab = document.getElementById('moviesTab');
+            const sonarrResults = document.getElementById('sonarrResults');
+            const radarrResults = document.getElementById('radarrResults');
+
+            if (tab === 'series') {
+                seriesTab.classList.add('active');
+                moviesTab.classList.remove('active');
+                sonarrResults.style.display = 'block';
+                radarrResults.style.display = 'none';
+            } else {
+                moviesTab.classList.add('active');
+                seriesTab.classList.remove('active');
+                radarrResults.style.display = 'block';
+                sonarrResults.style.display = 'none';
+            }
+        }
+
         // Calendar functions
         async function fetchSonarrCalendar() {
             try {
@@ -1372,7 +1438,7 @@
             try {
                 const response = await fetchWithFallback(
                     SONARR_CONFIG,
-                    `/api/v3/series/lookup?term=${encodeURIComponent(query)}&apiKey=${SONARR_CONFIG.apiKey}`
+                    `/api/v3/series/lookup?term=${encodeURIComponent(query)}&limit=100&apiKey=${SONARR_CONFIG.apiKey}`
                 );
                 if (!response.ok) throw new Error('Sonarr API error');
                 return await response.json();
@@ -1386,7 +1452,7 @@
             try {
                 const response = await fetchWithFallback(
                     RADARR_CONFIG,
-                    `/api/v3/movie/lookup?term=${encodeURIComponent(query)}&apiKey=${RADARR_CONFIG.apiKey}`
+                    `/api/v3/movie/lookup?term=${encodeURIComponent(query)}&limit=100&apiKey=${RADARR_CONFIG.apiKey}`
                 );
                 if (!response.ok) throw new Error('Radarr API error');
                 return await response.json();
@@ -1617,6 +1683,10 @@
         function displaySonarrResults(results) {
             const container = document.getElementById('sonarrResults');
             
+            // Update count in tab
+            const seriesCount = results ? results.length : 0;
+            document.getElementById('seriesCount').textContent = `Series (${seriesCount})`;
+            
             if (!results || results.length === 0) {
                 container.innerHTML = '<div class="no-results">No TV shows found</div>';
                 return;
@@ -1638,6 +1708,10 @@
 
         function displayRadarrResults(results) {
             const container = document.getElementById('radarrResults');
+            
+            // Update count in tab
+            const moviesCount = results ? results.length : 0;
+            document.getElementById('moviesCount').textContent = `Movies (${moviesCount})`;
             
             if (!results || results.length === 0) {
                 container.innerHTML = '<div class="no-results">No movies found</div>';
