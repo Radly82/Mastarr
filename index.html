@@ -919,12 +919,126 @@
         }
 
         @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+                max-width: 100%;
+            }
+
             h1 {
                 font-size: 1.8rem;
+                margin-bottom: 1rem;
             }
-            
+
+            .main-logo {
+                width: 120px;
+                height: auto;
+            }
+
             .search-box {
                 flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .search-box input {
+                width: 100%;
+                padding: 0.75rem;
+            }
+
+            .search-box button {
+                width: 100%;
+                padding: 0.75rem;
+            }
+
+            .results-container {
+                padding: 1rem;
+            }
+
+            .results-tabs {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .results-tab {
+                padding: 0.75rem;
+                font-size: 0.9rem;
+            }
+
+            .result-item {
+                padding: 0.75rem;
+            }
+
+            .result-content {
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+
+            .result-checkbox-wrapper {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 0.5rem;
+            }
+
+            .download-btn {
+                width: 100%;
+                padding: 0.75rem;
+                font-size: 0.9rem;
+            }
+
+            .calendar-section {
+                padding: 1rem;
+            }
+
+            .sabnzbd-section {
+                padding: 1rem;
+            }
+
+            .sabnzbd-stats {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .sabnzbd-stat {
+                text-align: center;
+            }
+
+            .history-item {
+                padding: 0.75rem;
+            }
+
+            .theme-dropdown {
+                right: 0;
+                left: auto;
+            }
+
+            .modal {
+                width: 95%;
+                max-width: 95%;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            .modal-content {
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .main-logo {
+                width: 100px;
+            }
+
+            .results-header h2 {
+                font-size: 1.2rem;
+            }
+
+            .service-icon-small {
+                width: 16px;
+                height: 16px;
             }
         }
     </style>
@@ -1147,6 +1261,10 @@
                 tailscaleUrl: config.sabnzbd.tailscaleUrl,
                 apiKey: config.sabnzbd.apiKey
             };
+
+            // Load calendars after config is loaded
+            loadCalendars();
+            updateSabnzbdDownloads();
         }).catch(error => {
             console.error('Error loading config:', error);
             // Use empty config as fallback
@@ -1460,7 +1578,7 @@
         }
 
         // Load calendars on page load
-        document.addEventListener('DOMContentLoaded', loadCalendars);
+        // document.addEventListener('DOMContentLoaded', loadCalendars);
 
         function toggleCalendar(calendarId) {
             const calendarList = document.getElementById(calendarId);
