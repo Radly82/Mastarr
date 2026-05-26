@@ -851,22 +851,45 @@
 
         async function fetchWithFallback(type, path) {
             const urls = getServiceUrls(type);
-            let lastError;
+            if (urls.length === 0) throw new Error('No service URL configured');
 
-            for (const baseUrl of urls) {
-                try {
-                    const response = await fetch(`${baseUrl}${path}`);
-                    if (response.ok || response.status >= 400) {
-                        response.baseUrl = baseUrl;
-                        return response;
-                    }
-                    lastError = new Error(`HTTP ${response.status}`);
-                } catch (error) {
-                    lastError = error;
-                }
+            const TIMEOUT_MS = 5000;
+
+            function fetchWithTimeout(baseUrl) {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+                return fetch(`${baseUrl}${path}`, { signal: controller.signal })
+                    .then(response => {
+                        clearTimeout(timer);
+                        if (response.ok || response.status >= 400) {
+                            response.baseUrl = baseUrl;
+                            return response;
+                        }
+                        throw new Error(`HTTP ${response.status}`);
+                    })
+                    .catch(err => {
+                        clearTimeout(timer);
+                        throw err;
+                    });
             }
 
-            throw lastError || new Error('No service URL configured');
+            if (urls.length === 1) {
+                return fetchWithTimeout(urls[0]);
+            }
+
+            // Race all URLs simultaneously, return first success
+            return new Promise((resolve, reject) => {
+                let errors = 0;
+                const total = urls.length;
+                urls.forEach(baseUrl => {
+                    fetchWithTimeout(baseUrl)
+                        .then(resolve)
+                        .catch(() => {
+                            errors++;
+                            if (errors === total) reject(new Error('All service URLs failed or timed out'));
+                        });
+                });
+            });
         }
 
         async function loadRootFolders(type) {
