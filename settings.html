@@ -569,11 +569,24 @@
         async function loadSettings() {
             let settings = {};
             
+            // Try backend API first (Docker mode)
             try {
-                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                const response = await fetch('/api/settings');
+                if (response.ok) {
+                    settings = await response.json();
+                    console.log('Loaded settings from backend API');
+                } else {
+                    throw new Error('Backend API not available');
+                }
             } catch (error) {
-                console.error('Error loading settings:', error);
-                settings = {};
+                console.log('Backend API not available, using localStorage');
+                // Fallback to localStorage
+                try {
+                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                } catch (e) {
+                    console.error('Error loading settings from localStorage:', e);
+                    settings = {};
+                }
             }
             
             document.getElementById('sonarrUrl').value = settings.sonarrUrl || '';
@@ -587,6 +600,29 @@
             document.getElementById('sabnzbdApiKey').value = settings.sabnzbdApiKey || '';
             setDefaultRootFolderOption('sonarrDefaultRootFolder', settings.sonarrDefaultRootFolder || '');
             setDefaultRootFolderOption('radarrDefaultRootFolder', settings.radarrDefaultRootFolder || '');
+        }
+
+        async function saveSettingsToBackend(settings) {
+            // Try backend API first (Docker mode)
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+                if (response.ok) {
+                    console.log('Saved settings to backend API');
+                    return true;
+                }
+                throw new Error('Backend API not available');
+            } catch (error) {
+                console.log('Backend API not available, using localStorage');
+                // Fallback to localStorage
+                localStorage.setItem('appSettings', JSON.stringify(settings));
+                return false;
+            }
         }
 
         async function saveSonarrSettings() {
@@ -604,7 +640,7 @@
             settings.sonarrApiKey = document.getElementById('sonarrApiKey').value;
             settings.sonarrDefaultRootFolder = rootFolder;
             
-            localStorage.setItem('appSettings', JSON.stringify(settings));
+            await saveSettingsToBackend(settings);
             alert('Sonarr settings saved successfully!');
         }
 
@@ -623,7 +659,7 @@
             settings.radarrApiKey = document.getElementById('radarrApiKey').value;
             settings.radarrDefaultRootFolder = rootFolder;
             
-            localStorage.setItem('appSettings', JSON.stringify(settings));
+            await saveSettingsToBackend(settings);
             alert('Radarr settings saved successfully!');
         }
 
@@ -634,7 +670,7 @@
             settings.sabnzbdTailscaleUrl = document.getElementById('sabnzbdTailscaleUrl').value;
             settings.sabnzbdApiKey = document.getElementById('sabnzbdApiKey').value;
             
-            localStorage.setItem('appSettings', JSON.stringify(settings));
+            await saveSettingsToBackend(settings);
             alert('Sabnzbd settings saved successfully!');
         }
 
@@ -718,7 +754,7 @@
                 sabnzbdApiKey: document.getElementById('sabnzbdApiKey').value
             };
             
-            localStorage.setItem('appSettings', JSON.stringify(settings));
+            await saveSettingsToBackend(settings);
             alert('All settings saved successfully!');
         }
 
