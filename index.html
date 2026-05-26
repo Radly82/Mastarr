@@ -1052,15 +1052,28 @@
     </div>
 
     <script>
-        // Load settings from localStorage
+        // Load settings from localStorage or backend API
         async function loadConfig() {
             let settings = {};
             
+            // Try backend API first (Docker mode)
             try {
-                settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                const response = await fetch('/api/settings');
+                if (response.ok) {
+                    settings = await response.json();
+                    console.log('Loaded settings from backend API');
+                } else {
+                    throw new Error('Backend API not available');
+                }
             } catch (error) {
-                console.error('Error loading settings:', error);
-                settings = {};
+                console.log('Backend API not available, using localStorage');
+                // Fallback to localStorage
+                try {
+                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                } catch (e) {
+                    console.error('Error loading settings from localStorage:', e);
+                    settings = {};
+                }
             }
             
             return {
@@ -1082,6 +1095,29 @@
                     apiKey: settings.sabnzbdApiKey || ''
                 }
             };
+        }
+
+        // Save settings to backend API or localStorage
+        async function saveConfig(settings) {
+            // Try backend API first (Docker mode)
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+                if (response.ok) {
+                    console.log('Saved settings to backend API');
+                    return;
+                }
+                throw new Error('Backend API not available');
+            } catch (error) {
+                console.log('Backend API not available, using localStorage');
+                // Fallback to localStorage
+                localStorage.setItem('appSettings', JSON.stringify(settings));
+            }
         }
 
         let config;
