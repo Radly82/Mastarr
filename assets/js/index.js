@@ -586,11 +586,18 @@
 
         function displayAutocomplete() {
             const dropdown = document.getElementById('autocompleteDropdown');
+            const searchInput = document.getElementById('searchInput');
 
             if (autocompleteResults.length === 0) {
                 hideAutocomplete();
                 return;
             }
+
+            // Position the fixed dropdown below the search input
+            const inputRect = searchInput.getBoundingClientRect();
+            dropdown.style.top = `${inputRect.bottom + 5}px`;
+            dropdown.style.left = `${inputRect.left}px`;
+            dropdown.style.width = `${inputRect.width}px`;
 
             dropdown.innerHTML = autocompleteResults.map((item, index) => `
                 <div class="autocomplete-item ${index === selectedIndex ? 'selected' : ''}"
