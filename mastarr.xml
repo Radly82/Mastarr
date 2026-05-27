@@ -1,14 +1,15 @@
 <?xml version="1.0"?>
 <Container version="2">
-  <Name>MastARR</Name>
+  <Name>mastarr-docker</Name>
   <Repository>radly82/mastarr-docker:latest</Repository>
-  <Registry>https://hub.docker.com/r/radly82/mastarr-docker</Registry>
+  <Registry/>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support>https://github.com/radly82/mastarr</Support>
   <Project>https://github.com/radly82/mastarr</Project>
+  <ReadMe/>
   <Overview>
     MastARR is a modern web interface for searching and managing your media library with Radarr (movies), Sonarr (TV shows), and SABnzbd (downloads).
     &#13;&#10;
@@ -22,19 +23,18 @@
     &#13;&#10;
     &#13;&#10;Configuration: All settings (API keys, URLs) are saved in your browser&#39;s localStorage — nothing is stored server-side.
   </Overview>
-  <Category>Media:Other</Category>
-  <WebUI>http://[IP]:[PORT:6969]/</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/Radly82/Mastarr/main/mastarr.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/Radly82/Mastarr/main/MA.png</Icon>
+  <Category/>
+  <WebUI>http://[IP]:[PORT:6969]</WebUI>
+  <TemplateURL/>
+  <Icon>https://t4.ftcdn.net/jpg/04/06/95/65/240_F_406956529_FoZrYL2ItP0Pu0um4oX3Amb8xvCenP5s.jpg</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>
-  <DateInstalled>1704067200</DateInstalled>
+  <DateInstalled>1779688552</DateInstalled>
   <DonateText/>
   <DonateLink/>
   <Description>MastARR is a modern web interface for searching and managing your media library with Radarr, Sonarr, and SABnzbd.</Description>
-
-  <Config Name="Container Port 1" Target="6969" Default="6969" Mode="tcp" Description="WebUI port (TCP)" Type="Port" Display="always" Required="true">6969</Config>
-  <Config Name="Container Port 2" Target="6969" Default="6969" Mode="udp" Description="WebUI port (UDP)" Type="Port" Display="always" Required="true">6969</Config>
-  <Config Name="Installed Location" Target="/data" Default="/mnt/user/appdata/" Mode="rw" Description="Host path where app data is stored." Type="Path" Display="always" Required="true"></Config>
+  <Requires/>
+  <Config Name="Web UI Port" Target="6969" Default="6969" Mode="tcp" Description="Port to access your mastarr page" Type="Port" Display="always" Required="false" Mask="false">6969</Config>
+  <TailscaleStateDir/>
 </Container>
