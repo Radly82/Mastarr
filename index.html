@@ -46,9 +46,10 @@
         
         <div class="search-container">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search for Movies or Series..." onclick="this.focus()" onmousedown="this.focus()" />
+                <input type="text" id="searchInput" placeholder="Search for Movies or Series..." onclick="this.focus()" onmousedown="this.focus()" autocomplete="off" />
                 <button id="searchBtn" onclick="searchBoth()">Search</button>
             </div>
+            <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
             <div id="errorContainer"></div>
         </div>
 

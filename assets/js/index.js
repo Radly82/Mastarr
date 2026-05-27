@@ -528,6 +528,120 @@
             }
         }
 
+        // Autocomplete functionality
+        let autocompleteTimeout;
+        let autocompleteResults = [];
+        let selectedIndex = -1;
+
+        function debounce(func, wait) {
+            return function(...args) {
+                clearTimeout(autocompleteTimeout);
+                autocompleteTimeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        async function fetchAutocomplete(query) {
+            if (query.length < 2) {
+                hideAutocomplete();
+                return;
+            }
+
+            try {
+                await waitForConfig();
+
+                const [sonarrResults, radarrResults] = await Promise.allSettled([
+                    searchSonarr(query),
+                    searchRadarr(query)
+                ]);
+
+                autocompleteResults = [];
+
+                if (sonarrResults.status === 'fulfilled' && sonarrResults.value) {
+                    sonarrResults.value.slice(0, 5).forEach(item => {
+                        autocompleteResults.push({
+                            title: item.title,
+                            year: item.year,
+                            type: 'series',
+                            data: item
+                        });
+                    });
+                }
+
+                if (radarrResults.status === 'fulfilled' && radarrResults.value) {
+                    radarrResults.value.slice(0, 5).forEach(item => {
+                        autocompleteResults.push({
+                            title: item.title,
+                            year: item.year,
+                            type: 'movie',
+                            data: item
+                        });
+                    });
+                }
+
+                displayAutocomplete();
+            } catch (error) {
+                console.error('Autocomplete error:', error);
+            }
+        }
+
+        function displayAutocomplete() {
+            const dropdown = document.getElementById('autocompleteDropdown');
+
+            if (autocompleteResults.length === 0) {
+                hideAutocomplete();
+                return;
+            }
+
+            dropdown.innerHTML = autocompleteResults.map((item, index) => `
+                <div class="autocomplete-item ${index === selectedIndex ? 'selected' : ''}"
+                     onclick="selectAutocompleteItem(${index})"
+                     data-index="${index}">
+                    <span class="autocomplete-item-title">${item.title}</span>
+                    <span class="autocomplete-item-type">(${item.type === 'series' ? 'TV' : 'Movie'})</span>
+                    ${item.year ? `<span class="autocomplete-item-year">${item.year}</span>` : ''}
+                </div>
+            `).join('');
+
+            dropdown.classList.add('active');
+        }
+
+        function hideAutocomplete() {
+            const dropdown = document.getElementById('autocompleteDropdown');
+            dropdown.classList.remove('active');
+            dropdown.innerHTML = '';
+            autocompleteResults = [];
+            selectedIndex = -1;
+        }
+
+        function selectAutocompleteItem(index) {
+            const item = autocompleteResults[index];
+            if (!item) return;
+
+            document.getElementById('searchInput').value = item.title;
+            hideAutocomplete();
+
+            // Trigger search with the selected item
+            if (item.type === 'series') {
+                searchSonarr(item.title).then(results => {
+                    displaySonarrResults(results);
+                    document.getElementById('sonarrResults').style.display = 'block';
+                    document.getElementById('radarrResults').style.display = 'none';
+                    document.getElementById('seriesTab').classList.add('active');
+                    document.getElementById('moviesTab').classList.remove('active');
+                });
+            } else {
+                searchRadarr(item.title).then(results => {
+                    displayRadarrResults(results);
+                    document.getElementById('radarrResults').style.display = 'block';
+                    document.getElementById('sonarrResults').style.display = 'none';
+                    document.getElementById('moviesTab').classList.add('active');
+                    document.getElementById('seriesTab').classList.remove('active');
+                });
+            }
+        }
+
+        const debouncedAutocomplete = debounce(fetchAutocomplete, 300);
+
         async function addSeries(series, customDirectory = null) {
             const btn = document.querySelector(`[data-id="sonarr-${series.tvdbId || series.title}"]`);
             if (!btn) return;
@@ -1035,13 +1149,53 @@
                 // Ensure input is always enabled
                 searchInput.disabled = false;
                 searchInput.readOnly = false;
-                
+
+                // Autocomplete input event
+                searchInput.addEventListener('input', function(e) {
+                    debouncedAutocomplete(e.target.value);
+                });
+
+                // Keyboard navigation
+                searchInput.addEventListener('keydown', function(e) {
+                    const dropdown = document.getElementById('autocompleteDropdown');
+
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (selectedIndex < autocompleteResults.length - 1) {
+                            selectedIndex++;
+                            displayAutocomplete();
+                        }
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (selectedIndex > 0) {
+                            selectedIndex--;
+                            displayAutocomplete();
+                        }
+                    } else if (e.key === 'Enter') {
+                        if (selectedIndex >= 0 && autocompleteResults.length > 0) {
+                            e.preventDefault();
+                            selectAutocompleteItem(selectedIndex);
+                        } else {
+                            searchBoth();
+                        }
+                    } else if (e.key === 'Escape') {
+                        hideAutocomplete();
+                    }
+                });
+
+                // Hide autocomplete when clicking outside
+                document.addEventListener('click', function(e) {
+                    if (!e.target.closest('.search-box')) {
+                        hideAutocomplete();
+                    }
+                });
+
                 searchInput.addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' && selectedIndex < 0) {
                         searchBoth();
                     }
                 });
-                
+
                 console.log('Search input initialized');
             } else {
                 console.error('Search input not found');
