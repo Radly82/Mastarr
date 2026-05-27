@@ -211,6 +211,10 @@
 
             if (layout !== 'compact') {
                 html.setAttribute('data-layout', layout);
+                // Auto-set dark theme when switching to MastarrFlix
+                if (layout === 'mastarrflix') {
+                    changeTheme('dark');
+                }
             }
 
             localStorage.setItem('layout', layout);

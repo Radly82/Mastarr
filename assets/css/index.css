@@ -339,6 +339,11 @@
             color: #ffffff;
         }
 
+        [data-layout="mastarrflix"] #themesSubmenu,
+        [data-layout="mastarrflix"] .menu-item[onclick*="themesSubmenu"] {
+            display: none;
+        }
+
         .results-section {
             background: var(--bg-secondary);
             border-radius: 16px;
