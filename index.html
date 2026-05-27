@@ -26,6 +26,13 @@
                     <div class="theme-option" onclick="changeTheme('80s')" data-theme="80s">80's Theme</div>
                     <div class="theme-option" onclick="changeTheme('theatre')" data-theme="theatre">Theatre Theme</div>
                 </div>
+                <div class="menu-item" onclick="toggleSubmenu('layoutSubmenu')">
+                    Layout <span class="submenu-arrow">▶</span>
+                </div>
+                <div class="submenu" id="layoutSubmenu">
+                    <div class="theme-option layout-option" onclick="changeLayout('compact')" data-layout="compact">Compact</div>
+                    <div class="theme-option layout-option" onclick="changeLayout('mastarrflix')" data-layout="mastarrflix">MastarrFlix</div>
+                </div>
                 <div class="menu-item" onclick="window.location.href='settings.html'">
                     Settings
                 </div>
