@@ -1120,11 +1120,12 @@
             }
 
             .theme-dropdown {
-                right: 0;
-                left: auto;
+                right: 0.5rem;
+                left: 0.5rem;
                 top: 60px;
-                min-width: 180px;
-                max-width: 280px;
+                min-width: auto;
+                max-width: none;
+                width: auto;
                 z-index: 1000;
             }
 
