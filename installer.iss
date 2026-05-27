@@ -1,6 +1,6 @@
 [Setup]
 AppName=MastARR
-AppVersion=0.1.0
+AppVersion=0.2.0
 DefaultDirName={autopf}\MastARR
 DefaultGroupName=MastARR
 OutputDir=C:\Users\conra\CascadeProjects\mastarr installer
