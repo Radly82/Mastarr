@@ -344,65 +344,6 @@ async function loadSettings() {
             }
         }
 
-        // Theme switching functionality
-        function changeTheme(theme) {
-            const html = document.documentElement;
-            
-            // Remove all theme attributes
-            html.removeAttribute('data-theme');
-            
-            // Set the selected theme
-            if (theme !== 'dark') {
-                html.setAttribute('data-theme', theme);
-            }
-            
-            // Save preference to localStorage
-            localStorage.setItem('theme', theme);
-            
-            // Update selected state
-            document.querySelectorAll('.theme-option').forEach(option => {
-                option.classList.remove('selected');
-                if (option.dataset.theme === theme) {
-                    option.classList.add('selected');
-                }
-            });
-            
-            // Close dropdown
-            document.getElementById('mainDropdown').classList.remove('active');
-        }
-        
-        function toggleMainDropdown() {
-            const dropdown = document.getElementById('mainDropdown');
-            dropdown.classList.toggle('active');
-        }
-        
-        function toggleSubmenu(submenuId) {
-            const submenu = document.getElementById(submenuId);
-            const menuItem = submenu.previousElementSibling;
-            
-            // Close other submenus
-            document.querySelectorAll('.submenu').forEach(sm => {
-                if (sm.id !== submenuId) {
-                    sm.classList.remove('active');
-                    sm.previousElementSibling.classList.remove('active');
-                }
-            });
-            
-            // Toggle current submenu
-            submenu.classList.toggle('active');
-            menuItem.classList.toggle('active');
-        }
-        
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            const themeSelector = document.querySelector('.theme-selector');
-            if (!themeSelector.contains(e.target)) {
-                document.getElementById('mainDropdown').classList.remove('active');
-                document.querySelectorAll('.submenu').forEach(sm => sm.classList.remove('active'));
-                document.querySelectorAll('.menu-item').forEach(mi => mi.classList.remove('active'));
-            }
-        });
-
         // Load saved theme on page load
         function loadTheme() {
             const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -416,13 +357,6 @@ async function loadSettings() {
                 html.setAttribute('data-theme', savedTheme);
             }
             
-            // Update selected state
-            document.querySelectorAll('.theme-option').forEach(option => {
-                option.classList.remove('selected');
-                if (option.dataset.theme === savedTheme) {
-                    option.classList.add('selected');
-                }
-            });
         }
 
         // Load settings on page load
