@@ -1104,9 +1104,38 @@
                 padding: 0.75rem;
             }
 
+            .theme-selector {
+                top: 0.5rem;
+                left: 0.5rem;
+            }
+
+            .theme-button {
+                padding: 12px;
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 8px;
+            }
+
+            .theme-button .dot {
+                font-size: 14px;
+            }
+
             .theme-dropdown {
                 right: 0;
                 left: auto;
+                top: 60px;
+                min-width: 180px;
+                max-width: 280px;
+                z-index: 1000;
+            }
+
+            .menu-item,
+            .theme-option {
+                padding: 0.75rem 1rem;
+                font-size: 0.9rem;
+            }
+
+            .submenu {
+                padding-left: 1.25rem;
             }
 
             .modal {
