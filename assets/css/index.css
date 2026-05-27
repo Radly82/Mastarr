@@ -1105,8 +1105,10 @@
             }
 
             .theme-selector {
-                top: 0.5rem;
-                left: 0.5rem;
+                top: auto;
+                bottom: 1rem;
+                left: 50%;
+                transform: translateX(-50%);
             }
 
             .theme-button {
@@ -1122,7 +1124,8 @@
             .theme-dropdown {
                 right: 0.5rem;
                 left: 0.5rem;
-                top: 55px;
+                bottom: 60px;
+                top: auto;
                 min-width: auto;
                 max-width: none;
                 width: auto;
