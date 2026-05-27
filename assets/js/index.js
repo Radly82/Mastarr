@@ -203,6 +203,27 @@
             // Close dropdown
             document.getElementById('mainDropdown').classList.remove('active');
         }
+
+        function changeLayout(layout) {
+            const html = document.documentElement;
+
+            html.removeAttribute('data-layout');
+
+            if (layout !== 'compact') {
+                html.setAttribute('data-layout', layout);
+            }
+
+            localStorage.setItem('layout', layout);
+
+            document.querySelectorAll('.layout-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.layout === layout) {
+                    option.classList.add('selected');
+                }
+            });
+
+            document.getElementById('mainDropdown').classList.remove('active');
+        }
         
         function toggleMainDropdown() {
             const dropdown = document.getElementById('mainDropdown');
@@ -239,6 +260,7 @@
         // Load saved theme on page load
         function loadTheme() {
             const savedTheme = localStorage.getItem('theme') || 'dark';
+            const savedLayout = localStorage.getItem('layout') || 'compact';
             const html = document.documentElement;
             
             // Remove all theme attributes
@@ -248,11 +270,24 @@
             if (savedTheme !== 'dark') {
                 html.setAttribute('data-theme', savedTheme);
             }
+
+            html.removeAttribute('data-layout');
+
+            if (savedLayout !== 'compact') {
+                html.setAttribute('data-layout', savedLayout);
+            }
             
             // Update selected state
             document.querySelectorAll('.theme-option').forEach(option => {
                 option.classList.remove('selected');
                 if (option.dataset.theme === savedTheme) {
+                    option.classList.add('selected');
+                }
+            });
+
+            document.querySelectorAll('.layout-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.layout === savedLayout) {
                     option.classList.add('selected');
                 }
             });
