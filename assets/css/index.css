@@ -1134,12 +1134,12 @@
 
             .menu-item,
             .theme-option {
-                padding: 0.5rem 0.75rem;
-                font-size: 0.85rem;
+                padding: 0.75rem 1rem;
+                font-size: 1rem;
             }
 
             .submenu {
-                padding-left: 0.75rem;
+                padding-left: 1rem;
                 margin-top: 0.25rem;
             }
 
