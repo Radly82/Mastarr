@@ -1,0 +1,1564 @@
+// Load settings from localStorage or backend API
+        async function loadConfig() {
+            let settings = {};
+            
+            // Try backend API first (Docker mode)
+            try {
+                const response = await fetch('/api/settings');
+                if (response.ok) {
+                    settings = await response.json();
+                    console.log('Loaded settings from backend API');
+                } else {
+                    throw new Error('Backend API not available');
+                }
+            } catch (error) {
+                console.log('Backend API not available, using localStorage');
+                // Fallback to localStorage
+                try {
+                    settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+                } catch (e) {
+                    console.error('Error loading settings from localStorage:', e);
+                    settings = {};
+                }
+            }
+            
+            return {
+                sonarr: {
+                    url: settings.sonarrUrl || '',
+                    tailscaleUrl: settings.sonarrTailscaleUrl || '',
+                    apiKey: settings.sonarrApiKey || '',
+                    defaultRootFolder: settings.sonarrDefaultRootFolder || ''
+                },
+                radarr: {
+                    url: settings.radarrUrl || '',
+                    tailscaleUrl: settings.radarrTailscaleUrl || '',
+                    apiKey: settings.radarrApiKey || '',
+                    defaultRootFolder: settings.radarrDefaultRootFolder || ''
+                },
+                sabnzbd: {
+                    url: settings.sabnzbdUrl || '',
+                    tailscaleUrl: settings.sabnzbdTailscaleUrl || '',
+                    apiKey: settings.sabnzbdApiKey || ''
+                }
+            };
+        }
+
+        // Save settings to backend API or localStorage
+        async function saveConfig(settings) {
+            // Try backend API first (Docker mode)
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(settings)
+                });
+                if (response.ok) {
+                    console.log('Saved settings to backend API');
+                    return;
+                }
+                throw new Error('Backend API not available');
+            } catch (error) {
+                console.log('Backend API not available, using localStorage');
+                // Fallback to localStorage
+                localStorage.setItem('appSettings', JSON.stringify(settings));
+            }
+        }
+
+        let config;
+        let SONARR_CONFIG;
+        let RADARR_CONFIG;
+        let SABNZBD_CONFIG;
+
+        // Initialize config with error handling
+        loadConfig().then(loadedConfig => {
+            config = loadedConfig;
+            SONARR_CONFIG = {
+                url: config.sonarr.url,
+                tailscaleUrl: config.sonarr.tailscaleUrl,
+                apiKey: config.sonarr.apiKey,
+                defaultRootFolder: config.sonarr.defaultRootFolder
+            };
+
+            RADARR_CONFIG = {
+                url: config.radarr.url,
+                tailscaleUrl: config.radarr.tailscaleUrl,
+                apiKey: config.radarr.apiKey,
+                defaultRootFolder: config.radarr.defaultRootFolder
+            };
+
+            SABNZBD_CONFIG = {
+                url: config.sabnzbd.url,
+                tailscaleUrl: config.sabnzbd.tailscaleUrl,
+                apiKey: config.sabnzbd.apiKey
+            };
+
+            // Load calendars after config is loaded
+            loadCalendars();
+            updateSabnzbdDownloads();
+        }).catch(error => {
+            console.error('Error loading config:', error);
+            // Use empty config as fallback
+            config = {
+                sonarr: { url: '', tailscaleUrl: '', apiKey: '', defaultRootFolder: '' },
+                radarr: { url: '', tailscaleUrl: '', apiKey: '', defaultRootFolder: '' },
+                sabnzbd: { url: '', tailscaleUrl: '', apiKey: '' }
+            };
+            SONARR_CONFIG = config.sonarr;
+            RADARR_CONFIG = config.radarr;
+            SABNZBD_CONFIG = config.sabnzbd;
+        });
+
+        function getServiceUrls(config) {
+            return [config.url, config.tailscaleUrl].filter(Boolean);
+        }
+
+        async function fetchWithFallback(config, path, options) {
+            const urls = getServiceUrls(config);
+            if (urls.length === 0) throw new Error('No service URL configured');
+
+            const TIMEOUT_MS = 5000;
+
+            function fetchWithTimeout(baseUrl) {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+                return fetch(`${baseUrl}${path}`, { ...options, signal: controller.signal })
+                    .then(response => {
+                        clearTimeout(timer);
+                        if (response.ok || response.status >= 400) {
+                            response.baseUrl = baseUrl;
+                            return response;
+                        }
+                        throw new Error(`HTTP ${response.status}`);
+                    })
+                    .catch(err => {
+                        clearTimeout(timer);
+                        throw err;
+                    });
+            }
+
+            if (urls.length === 1) {
+                return fetchWithTimeout(urls[0]);
+            }
+
+            // Race all URLs simultaneously, return first success
+            return new Promise((resolve, reject) => {
+                let errors = 0;
+                const total = urls.length;
+                urls.forEach(baseUrl => {
+                    fetchWithTimeout(baseUrl)
+                        .then(resolve)
+                        .catch(() => {
+                            errors++;
+                            if (errors === total) reject(new Error('All service URLs failed or timed out'));
+                        });
+                });
+            });
+        }
+
+        async function fetchJsonWithFallback(config, path, options) {
+            const response = await fetchWithFallback(config, path, options);
+            return await response.json();
+        }
+
+        // Theme switching functionality
+        function changeTheme(theme) {
+            const html = document.documentElement;
+            
+            // Remove all theme attributes
+            html.removeAttribute('data-theme');
+            
+            // Set the selected theme
+            if (theme !== 'dark') {
+                html.setAttribute('data-theme', theme);
+            }
+            
+            // Save preference to localStorage
+            localStorage.setItem('theme', theme);
+            
+            // Update selected state
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.theme === theme) {
+                    option.classList.add('selected');
+                }
+            });
+            
+            // Close dropdown
+            document.getElementById('mainDropdown').classList.remove('active');
+        }
+        
+        function toggleMainDropdown() {
+            const dropdown = document.getElementById('mainDropdown');
+            dropdown.classList.toggle('active');
+        }
+        
+        function toggleSubmenu(submenuId) {
+            const submenu = document.getElementById(submenuId);
+            const menuItem = submenu.previousElementSibling;
+            
+            // Close other submenus
+            document.querySelectorAll('.submenu').forEach(sm => {
+                if (sm.id !== submenuId) {
+                    sm.classList.remove('active');
+                    sm.previousElementSibling.classList.remove('active');
+                }
+            });
+            
+            // Toggle current submenu
+            submenu.classList.toggle('active');
+            menuItem.classList.toggle('active');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const themeSelector = document.querySelector('.theme-selector');
+            if (!themeSelector.contains(e.target)) {
+                document.getElementById('mainDropdown').classList.remove('active');
+                document.querySelectorAll('.submenu').forEach(sm => sm.classList.remove('active'));
+                document.querySelectorAll('.menu-item').forEach(mi => mi.classList.remove('active'));
+            }
+        });
+
+        // Load saved theme on page load
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            const html = document.documentElement;
+            
+            // Remove all theme attributes
+            html.removeAttribute('data-theme');
+            
+            // Set the selected theme
+            if (savedTheme !== 'dark') {
+                html.setAttribute('data-theme', savedTheme);
+            }
+            
+            // Update selected state
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.remove('selected');
+                if (option.dataset.theme === savedTheme) {
+                    option.classList.add('selected');
+                }
+            });
+        }
+
+        // Initialize theme on page load
+        document.addEventListener('DOMContentLoaded', loadTheme);
+
+        // Results tab switching
+        function switchResultsTab(tab) {
+            const seriesTab = document.getElementById('seriesTab');
+            const moviesTab = document.getElementById('moviesTab');
+            const sonarrResults = document.getElementById('sonarrResults');
+            const radarrResults = document.getElementById('radarrResults');
+
+            if (tab === 'series') {
+                seriesTab.classList.add('active');
+                moviesTab.classList.remove('active');
+                sonarrResults.style.display = 'block';
+                radarrResults.style.display = 'none';
+            } else {
+                moviesTab.classList.add('active');
+                seriesTab.classList.remove('active');
+                radarrResults.style.display = 'block';
+                sonarrResults.style.display = 'none';
+            }
+        }
+
+        // Calendar functions
+        async function fetchSonarrCalendar() {
+            try {
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                
+                const response = await fetchWithFallback(
+                    SONARR_CONFIG,
+                    `/api/v3/calendar?start=${startOfMonth.toISOString()}&end=${endOfMonth.toISOString()}&apiKey=${SONARR_CONFIG.apiKey}`
+                );
+                if (!response.ok) throw new Error('Sonarr calendar API error');
+                return await response.json();
+            } catch (error) {
+                console.error('Sonarr calendar error:', error);
+                throw error;
+            }
+        }
+
+        async function fetchRadarrCalendar() {
+            try {
+                const now = new Date();
+                const startDate = now;
+                const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+                
+                const response = await fetchWithFallback(
+                    RADARR_CONFIG,
+                    `/api/v3/calendar?start=${startDate.toISOString()}&end=${endDate.toISOString()}&apiKey=${RADARR_CONFIG.apiKey}`
+                );
+                if (!response.ok) throw new Error('Radarr calendar API error');
+                return await response.json();
+            } catch (error) {
+                console.error('Radarr calendar error:', error);
+                throw error;
+            }
+        }
+
+        async function displaySonarrCalendar(items) {
+            const container = document.getElementById('sonarrCalendar');
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="no-results">No upcoming episodes</div>';
+                return;
+            }
+
+            // Filter out episodes that already have files (already downloaded)
+            const upcomingEpisodes = items.filter(item => !item.hasFile);
+            
+            if (upcomingEpisodes.length === 0) {
+                container.innerHTML = '<div class="no-results">No upcoming episodes</div>';
+                return;
+            }
+
+            // Fetch series information for each unique seriesId
+            const seriesIds = [...new Set(upcomingEpisodes.map(item => item.seriesId))];
+            const seriesMap = new Map();
+            
+            for (const seriesId of seriesIds) {
+                try {
+                    const response = await fetchWithFallback(
+                        SONARR_CONFIG,
+                        `/api/v3/series/${seriesId}?apiKey=${SONARR_CONFIG.apiKey}`
+                    );
+                    if (response.ok) {
+                        const series = await response.json();
+                        seriesMap.set(seriesId, series.title);
+                    }
+                } catch (error) {
+                    console.error('Error fetching series:', error);
+                }
+            }
+
+            container.innerHTML = upcomingEpisodes.map(item => {
+                const seriesTitle = seriesMap.get(item.seriesId) || 'Unknown';
+                const airDate = item.airDateUtc || item.airDate;
+                const dateStr = airDate ? new Date(airDate).toLocaleString() : 'Unknown date';
+                const episodeTitle = item.title || 'Unknown';
+
+                return `
+                    <div class="calendar-item">
+                        <div class="calendar-date">${dateStr}</div>
+                        <div class="calendar-title">${seriesTitle}</div>
+                        <div class="calendar-episode">${episodeTitle}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function displayRadarrCalendar(items) {
+            const container = document.getElementById('radarrCalendar');
+            
+            if (!items || items.length === 0) {
+                container.innerHTML = '<div class="no-results">No upcoming movies</div>';
+                return;
+            }
+
+            // Fetch existing movies from library to filter out
+            try {
+                const existingMovies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
+                const existingMovieIds = new Set(existingMovies.map(m => m.tmdbId));
+                
+                // Filter out movies that are already in the library
+                const upcomingMovies = items.filter(item => !existingMovieIds.has(item.tmdbId));
+                
+                if (upcomingMovies.length === 0) {
+                    container.innerHTML = '<div class="no-results">No upcoming movies</div>';
+                    return;
+                }
+
+                container.innerHTML = upcomingMovies.map(item => {
+                    const title = item.title || 'Unknown';
+                    const releaseDate = item.inCinemas || item.digitalRelease || item.physicalRelease;
+                    const dateStr = releaseDate ? new Date(releaseDate).toLocaleDateString() : 'Unknown date';
+                    const year = item.year || 'Unknown';
+
+                    return `
+                        <div class="calendar-item">
+                            <div class="calendar-date">${dateStr}</div>
+                            <div class="calendar-title">${title}</div>
+                            <div class="calendar-episode">${year}</div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error filtering movies:', error);
+                // If filtering fails, show all items
+                container.innerHTML = items.map(item => {
+                    const title = item.title || 'Unknown';
+                    const releaseDate = item.inCinemas || item.digitalRelease || item.physicalRelease;
+                    const dateStr = releaseDate ? new Date(releaseDate).toLocaleDateString() : 'Unknown date';
+                    const year = item.year || 'Unknown';
+
+                    return `
+                        <div class="calendar-item">
+                            <div class="calendar-date">${dateStr}</div>
+                            <div class="calendar-title">${title}</div>
+                            <div class="calendar-episode">${year}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        async function loadCalendars() {
+            try {
+                const [sonarrCalendar, radarrCalendar] = await Promise.allSettled([
+                    fetchSonarrCalendar(),
+                    fetchRadarrCalendar()
+                ]);
+
+                if (sonarrCalendar.status === 'fulfilled') {
+                    await displaySonarrCalendar(sonarrCalendar.value);
+                } else {
+                    document.getElementById('sonarrCalendar').innerHTML = '<div class="error">Failed to load Sonarr calendar</div>';
+                }
+
+                if (radarrCalendar.status === 'fulfilled') {
+                    await displayRadarrCalendar(radarrCalendar.value);
+                } else {
+                    document.getElementById('radarrCalendar').innerHTML = '<div class="error">Failed to load Radarr calendar</div>';
+                }
+            } catch (error) {
+                console.error('Error loading calendars:', error);
+            }
+        }
+
+        // Load calendars on page load
+        // document.addEventListener('DOMContentLoaded', loadCalendars);
+
+        function toggleCalendar(calendarId) {
+            const calendarList = document.getElementById(calendarId);
+            const header = calendarList.previousElementSibling;
+            
+            calendarList.classList.toggle('collapsed');
+            header.classList.toggle('collapsed');
+        }
+
+        async function searchSonarr(query) {
+            try {
+                const response = await fetchWithFallback(
+                    SONARR_CONFIG,
+                    `/api/v3/series/lookup?term=${encodeURIComponent(query)}&limit=100&apiKey=${SONARR_CONFIG.apiKey}`
+                );
+                if (!response.ok) throw new Error('Sonarr API error');
+                return await response.json();
+            } catch (error) {
+                console.error('Sonarr search error:', error);
+                throw error;
+            }
+        }
+
+        async function searchRadarr(query) {
+            try {
+                const response = await fetchWithFallback(
+                    RADARR_CONFIG,
+                    `/api/v3/movie/lookup?term=${encodeURIComponent(query)}&limit=100&apiKey=${RADARR_CONFIG.apiKey}`
+                );
+                if (!response.ok) throw new Error('Radarr API error');
+                return await response.json();
+            } catch (error) {
+                console.error('Radarr search error:', error);
+                throw error;
+            }
+        }
+
+        async function addSeries(series, customDirectory = null) {
+            const btn = document.querySelector(`[data-id="sonarr-${series.tvdbId || series.title}"]`);
+            if (!btn) return;
+            
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+
+            try {
+                console.log('Adding series:', series.title);
+                
+                // Check if series already exists in library
+                const existingSeries = await fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`);
+                const existing = existingSeries.find(s => s.tvdbId === series.tvdbId);
+                
+                if (existing) {
+                    console.log('Series already in library:', existing.title);
+                    btn.textContent = 'Already in Library';
+                    btn.classList.add('error');
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = 'Add Series';
+                        btn.classList.remove('error');
+                    }, 2000);
+                    return;
+                }
+                
+                // First, fetch the root folders and quality profiles to get valid IDs
+                const [rootFolders, qualityProfiles] = await Promise.all([
+                    fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/rootfolder?apiKey=${SONARR_CONFIG.apiKey}`),
+                    fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/qualityprofile?apiKey=${SONARR_CONFIG.apiKey}`)
+                ]);
+
+                console.log('Available root folders:', rootFolders);
+                console.log('Available quality profiles:', qualityProfiles);
+
+                // Use custom directory if provided, otherwise use configured default, otherwise use first available
+                const rootFolder = customDirectory || SONARR_CONFIG.defaultRootFolder || rootFolders[0]?.path || '/tv';
+                const qualityProfileId = qualityProfiles[0]?.id || 1;
+
+                // Use the full series data from lookup and add required fields
+                const seriesData = {
+                    ...series,
+                    qualityProfileId: qualityProfileId,
+                    seasonFolder: true,
+                    monitored: true,
+                    rootFolderPath: rootFolder,
+                    addOptions: {
+                        searchForMissingEpisodes: true
+                    }
+                };
+
+                // Remove fields that shouldn't be sent when adding
+                delete seriesData.id;
+                delete seriesData.seasons;
+
+                console.log('Sending to Sonarr:', seriesData);
+
+                const response = await fetchWithFallback(
+                    SONARR_CONFIG,
+                    `/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(seriesData)
+                    }
+                );
+
+                console.log('Sonarr response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Sonarr error response:', errorText);
+                    
+                    // Check if error is because series already exists
+                    if (errorText.includes('already been added') || errorText.includes('SeriesExistsValidator')) {
+                        btn.textContent = 'Already in Library';
+                        btn.classList.add('error');
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.textContent = 'Add to Sonarr';
+                            btn.classList.remove('error');
+                        }, 2000);
+                        return;
+                    }
+                    
+                    throw new Error(`Failed to add series: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log('Sonarr success response: Series added successfully');
+
+                btn.textContent = 'Added! ✓';
+                btn.classList.add('success');
+            } catch (error) {
+                console.error('Add series error:', error);
+                btn.textContent = 'Failed - Try Again';
+                btn.classList.add('error');
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Add to Sonarr';
+                    btn.classList.remove('error');
+                }, 2000);
+            }
+        }
+
+        async function addMovie(movie, customDirectory = null) {
+            const btn = document.querySelector(`[data-id="radarr-${movie.tmdbId || movie.title}"]`);
+            if (!btn) return;
+            
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+
+            try {
+                console.log('Adding movie:', movie.title);
+                
+                // Check if movie already exists in library
+                const existingMovies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
+                const existingMovie = existingMovies.find(m => m.tmdbId === movie.tmdbId);
+                
+                if (existingMovie) {
+                    console.log('Movie already in library:', existingMovie.title);
+                    btn.textContent = 'Already in Library';
+                    btn.classList.add('error');
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = 'Add Movie';
+                        btn.classList.remove('error');
+                    }, 2000);
+                    return;
+                }
+                
+                // First, fetch the root folders and quality profiles to get valid IDs
+                const [rootFolders, qualityProfiles] = await Promise.all([
+                    fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/rootfolder?apiKey=${RADARR_CONFIG.apiKey}`),
+                    fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/qualityprofile?apiKey=${RADARR_CONFIG.apiKey}`)
+                ]);
+
+                console.log('Available root folders:', rootFolders);
+                console.log('Available quality profiles:', qualityProfiles);
+
+                // Use custom directory if provided, otherwise use configured default, otherwise use first available
+                const rootFolder = customDirectory || RADARR_CONFIG.defaultRootFolder || rootFolders[0]?.path || '/movies';
+                const qualityProfileId = qualityProfiles[0]?.id || 1;
+
+                // Use the full movie data from lookup and add required fields
+                const movieData = {
+                    ...movie,
+                    qualityProfileId: qualityProfileId,
+                    monitored: true,
+                    rootFolderPath: rootFolder,
+                    addOptions: {
+                        searchForMovie: true
+                    }
+                };
+
+                // Remove fields that shouldn't be sent when adding
+                delete movieData.id;
+                delete movieData.movieFile;
+                delete movieData.hasFile;
+
+                console.log('Sending to Radarr:', movieData);
+
+                const response = await fetchWithFallback(
+                    RADARR_CONFIG,
+                    `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(movieData)
+                    }
+                );
+
+                console.log('Radarr response status:', response.status);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Radarr error response:', errorText);
+                    
+                    // Check if error is because movie already exists
+                    if (errorText.includes('already been added') || errorText.includes('MovieExistsValidator')) {
+                        btn.textContent = 'Already in Library';
+                        btn.classList.add('error');
+                        setTimeout(() => {
+                            btn.disabled = false;
+                            btn.textContent = 'Add to Radarr';
+                            btn.classList.remove('error');
+                        }, 2000);
+                        return;
+                    }
+                    
+                    throw new Error(`Failed to add movie: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+                console.log('Radarr success response: Movie added successfully');
+
+                btn.textContent = 'Added! ✓';
+                btn.classList.add('success');
+            } catch (error) {
+                console.error('Add movie error:', error);
+                btn.textContent = 'Failed - Try Again';
+                btn.classList.add('error');
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.textContent = 'Add to Radarr';
+                    btn.classList.remove('error');
+                }, 2000);
+            }
+        }
+
+        // Track selected items for bulk add (Radarr only)
+        let selectedRadarrItems = new Set();
+        let radarrItemsMap = new Map(); // Store item data by id
+
+        function displaySonarrResults(results) {
+            const container = document.getElementById('sonarrResults');
+            
+            // Update count in tab
+            const seriesCount = results ? results.length : 0;
+            document.getElementById('seriesCount').textContent = `Series (${seriesCount})`;
+            
+            if (!results || results.length === 0) {
+                container.innerHTML = '<div class="no-results">No TV shows found</div>';
+                return;
+            }
+
+            container.innerHTML = results.map(item => {
+                const seasonCount = item.seasons ? item.seasons.length : 0;
+                
+                return `
+                <div class="result-item" onclick="showCover(${JSON.stringify(item).replace(/"/g, '&quot;')}, 'sonarr')">
+                    <div class="result-title">${item.title || 'Unknown'}</div>
+                    <div class="result-year">${item.year ? `Year: ${item.year}` : ''} ${item.status ? `| Status: ${item.status}` : ''}</div>
+                    ${seasonCount > 0 ? `<div class="result-stats">${seasonCount} Season${seasonCount > 1 ? 's' : ''}</div>` : ''}
+                    ${item.overview ? `<div class="result-overview">${item.overview.substring(0, 200)}${item.overview.length > 200 ? '...' : ''}</div>` : ''}
+                    <button class="download-btn" onclick="event.stopPropagation(); addSeries(${JSON.stringify(item).replace(/"/g, '&quot;')})" data-id="sonarr-${item.tvdbId || item.title}">Add Series</button>
+                </div>
+            `}).join('');
+        }
+
+        function displayRadarrResults(results) {
+            const container = document.getElementById('radarrResults');
+            
+            // Update count in tab
+            const moviesCount = results ? results.length : 0;
+            document.getElementById('moviesCount').textContent = `Movies (${moviesCount})`;
+            
+            if (!results || results.length === 0) {
+                container.innerHTML = '<div class="no-results">No movies found</div>';
+                return;
+            }
+
+            // Clear and repopulate the items map
+            radarrItemsMap.clear();
+            selectedRadarrItems.clear();
+            results.forEach(item => {
+                const id = String(item.tmdbId || item.title);
+                radarrItemsMap.set(id, item);
+            });
+            
+            console.log('Map keys:', Array.from(radarrItemsMap.keys()));
+
+            container.innerHTML = results.map(item => {
+                const id = String(item.tmdbId || item.title);
+                return `
+                <div class="result-item" onclick="showCover(${JSON.stringify(item).replace(/"/g, '&quot;')}, 'radarr')">
+                    <div class="result-checkbox-wrapper">
+                        <input type="checkbox" class="result-checkbox" data-type="radarr" data-id="${id}" onclick="event.stopPropagation(); toggleSelection('radarr', '${id}', this)">
+                    </div>
+                    <div class="result-content">
+                        <div class="result-title">${item.title || 'Unknown'}</div>
+                        <div class="result-year">${item.year ? `Year: ${item.year}` : ''} ${item.status ? `| Status: ${item.status}` : ''}</div>
+                        ${item.overview ? `<div class="result-overview">${item.overview.substring(0, 200)}${item.overview.length > 200 ? '...' : ''}</div>` : ''}
+                    </div>
+                    <button class="download-btn radarr" onclick="handleRadarrButtonClick(${JSON.stringify(item).replace(/"/g, '&quot;')}, event)" data-id="radarr-${id}">Add Movie</button>
+                </div>
+            `}).join('');
+            
+            updateBulkAddButton();
+        }
+
+        function toggleSelection(type, id, checkbox) {
+            const itemData = radarrItemsMap.get(id);
+            
+            if (type === 'radarr') {
+                if (checkbox.checked) {
+                    selectedRadarrItems.add(id);
+                } else {
+                    selectedRadarrItems.delete(id);
+                }
+            }
+            
+            updateBulkAddButton();
+            updateRadarrButtonText();
+        }
+
+        function updateRadarrButtonText() {
+            const radarrButtons = document.querySelectorAll('#radarrResults .download-btn.radarr');
+            const text = selectedRadarrItems.size > 1 ? 'Add Multiple' : 'Add Movie';
+            
+            console.log('updateRadarrButtonText called, selected:', selectedRadarrItems.size, 'text:', text, 'buttons found:', radarrButtons.length);
+            
+            radarrButtons.forEach(btn => {
+                console.log('Setting button text to:', text);
+                btn.textContent = text;
+            });
+        }
+
+        function updateBulkAddButton() {
+            const radarrContainer = document.getElementById('radarrResults');
+            
+            // Add bulk add button for Radarr if items are selected
+            let radarrBulkBtn = document.getElementById('radarrBulkAddBtn');
+            if (selectedRadarrItems.size > 0) {
+                if (!radarrBulkBtn) {
+                    radarrBulkBtn = document.createElement('button');
+                    radarrBulkBtn.id = 'radarrBulkAddBtn';
+                    radarrBulkBtn.className = 'bulk-add-btn';
+                    radarrBulkBtn.onclick = bulkAddRadarr;
+                    radarrContainer.parentNode.insertBefore(radarrBulkBtn, radarrContainer.nextSibling);
+                }
+                radarrBulkBtn.textContent = `Add ${selectedRadarrItems.size} Movie${selectedRadarrItems.size > 1 ? 's' : ''} to Radarr`;
+            } else if (radarrBulkBtn) {
+                radarrBulkBtn.remove();
+            }
+        }
+
+        async function handleRadarrButtonClick(movie, event) {
+            event.stopPropagation();
+            
+            if (selectedRadarrItems.size > 1) {
+                bulkAddRadarr();
+            } else {
+                addMovie(movie);
+            }
+        }
+
+        async function bulkAddRadarr() {
+            if (selectedRadarrItems.size === 0) return;
+            
+            const btn = document.getElementById('radarrBulkAddBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Adding...';
+            }
+            
+            const items = Array.from(selectedRadarrItems)
+                .map(id => ({ id, item: radarrItemsMap.get(id) }))
+                .filter(({ id, item }) => {
+                    if (!item) {
+                        console.log('Skipping undefined item for id:', id);
+                        return false;
+                    }
+                    return true;
+                })
+                .map(({ item }) => item);
+            
+            console.log('Items to add:', items.length, 'Selected IDs:', Array.from(selectedRadarrItems), 'Map size:', radarrItemsMap.size);
+            
+            if (items.length === 0) {
+                console.error('No valid items to add. Map may have been cleared.');
+                if (btn) {
+                    btn.textContent = 'Error - Try again';
+                    setTimeout(() => {
+                        btn.disabled = false;
+                        btn.textContent = `Add ${selectedRadarrItems.size} Movie${selectedRadarrItems.size > 1 ? 's' : ''} to Radarr`;
+                    }, 2000);
+                }
+                return;
+            }
+            
+            let successCount = 0;
+            let failCount = 0;
+            
+            for (const movie of items) {
+                try {
+                    // Check if movie already exists
+                    const existingMovies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
+                    const existing = existingMovies.find(m => m.tmdbId === movie.tmdbId);
+                    
+                    if (existing) {
+                        failCount++;
+                        continue;
+                    }
+                    
+                    const [rootFolders, qualityProfiles] = await Promise.all([
+                        fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/rootfolder?apiKey=${RADARR_CONFIG.apiKey}`),
+                        fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/qualityprofile?apiKey=${RADARR_CONFIG.apiKey}`)
+                    ]);
+                    
+                    const rootFolder = RADARR_CONFIG.defaultRootFolder || rootFolders[0]?.path || '/movies';
+                    const qualityProfileId = qualityProfiles[0]?.id || 1;
+                    
+                    const movieData = {
+                        ...movie,
+                        qualityProfileId: qualityProfileId,
+                        monitored: true,
+                        rootFolderPath: rootFolder,
+                        addOptions: {
+                            searchForMovie: true
+                        }
+                    };
+                    
+                    delete movieData.id;
+                    delete movieData.movieFile;
+                    delete movieData.hasFile;
+                    
+                    const response = await fetchWithFallback(
+                        RADARR_CONFIG,
+                        `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(movieData)
+                        }
+                    );
+                    
+                    if (response.ok) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                    }
+                } catch (error) {
+                    console.error('Error adding movie:', error);
+                    failCount++;
+                }
+            }
+            
+            btn.textContent = `Added ${successCount}, Failed ${failCount}`;
+            btn.classList.add(successCount > 0 ? 'success' : 'error');
+            
+            setTimeout(() => {
+                btn.disabled = false;
+                selectedRadarrItems.clear();
+                document.querySelectorAll('.result-checkbox[data-type="radarr"]').forEach(cb => cb.checked = false);
+                updateBulkAddButton();
+                updateRadarrButtonText();
+            }, 3000);
+        }
+
+        function showError(message) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function clearError() {
+            document.getElementById('errorContainer').innerHTML = '';
+        }
+
+        async function searchBoth() {
+            const query = document.getElementById('searchInput').value.trim();
+            const searchBtn = document.getElementById('searchBtn');
+            
+            if (!query) {
+                showError('Please enter a search term');
+                return;
+            }
+
+            clearError();
+            searchBtn.disabled = true;
+            searchBtn.textContent = 'Searching...';
+
+            document.getElementById('sonarrResults').innerHTML = '<div class="loading">Searching Sonarr...</div>';
+            document.getElementById('radarrResults').innerHTML = '<div class="loading">Searching Radarr...</div>';
+
+            try {
+                const [sonarrResults, radarrResults] = await Promise.allSettled([
+                    searchSonarr(query),
+                    searchRadarr(query)
+                ]);
+
+                if (sonarrResults.status === 'fulfilled') {
+                    displaySonarrResults(sonarrResults.value);
+                } else {
+                    document.getElementById('sonarrResults').innerHTML = '<div class="error">Failed to search Sonarr. Make sure the service is running and accessible.</div>';
+                }
+
+                if (radarrResults.status === 'fulfilled') {
+                    displayRadarrResults(radarrResults.value);
+                } else {
+                    document.getElementById('radarrResults').innerHTML = '<div class="error">Failed to search Radarr. Make sure the service is running and accessible.</div>';
+                }
+
+            } catch (error) {
+                showError('An unexpected error occurred during search');
+                console.error(error);
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.textContent = 'Search';
+            }
+        }
+
+        // Allow Enter key to trigger search
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                // Ensure input is always enabled
+                searchInput.disabled = false;
+                searchInput.readOnly = false;
+                
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        searchBoth();
+                    }
+                });
+                
+                console.log('Search input initialized');
+            } else {
+                console.error('Search input not found');
+            }
+        });
+
+        function copyDebugInfo() {
+            const searchInput = document.getElementById('searchInput');
+            const debugInfo = {
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                searchInput: {
+                    exists: !!searchInput,
+                    disabled: searchInput ? searchInput.disabled : 'N/A',
+                    readOnly: searchInput ? searchInput.readOnly : 'N/A',
+                    value: searchInput ? searchInput.value : 'N/A',
+                    focused: document.activeElement === searchInput
+                },
+                config: {
+                    sonarrUrl: SONARR_CONFIG ? SONARR_CONFIG.url : 'Not loaded',
+                    radarrUrl: RADARR_CONFIG ? RADARR_CONFIG.url : 'Not loaded',
+                    sabnzbdUrl: SABNZBD_CONFIG ? SABNZBD_CONFIG.url : 'Not loaded',
+                    sonarrApiKey: SONARR_CONFIG ? (SONARR_CONFIG.apiKey ? 'Present (' + SONARR_CONFIG.apiKey.length + ' chars)' : 'Missing') : 'Not loaded',
+                    radarrApiKey: RADARR_CONFIG ? (RADARR_CONFIG.apiKey ? 'Present (' + RADARR_CONFIG.apiKey.length + ' chars)' : 'Missing') : 'Not loaded',
+                    sabnzbdApiKey: SABNZBD_CONFIG ? (SABNZBD_CONFIG.apiKey ? 'Present (' + SABNZBD_CONFIG.apiKey.length + ' chars)' : 'Missing') : 'Not loaded'
+                },
+                electron: typeof window.electronAPI !== 'undefined',
+                localStorage: {
+                    appSettings: localStorage.getItem('appSettings') ? 'Present' : 'Missing'
+                }
+            };
+            
+            const debugString = JSON.stringify(debugInfo, null, 2);
+            
+            // Try clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(debugString).then(() => {
+                    alert('Debug info copied to clipboard! Paste it here.');
+                }).catch(err => {
+                    console.error('Failed to copy debug info:', err);
+                    showDebugInAlert(debugString);
+                });
+            } else {
+                // Fallback: show in alert
+                showDebugInAlert(debugString);
+            }
+        }
+
+        function showDebugInAlert(debugString) {
+            // Try to use Electron clipboard if available
+            if (window.electronAPI && window.electronAPI.writeToClipboard) {
+                window.electronAPI.writeToClipboard(debugString).then(() => {
+                    alert('Debug info copied to clipboard! Paste it here.');
+                }).catch(err => {
+                    console.error('Failed to copy via Electron API:', err);
+                    alert('Debug info:\n\n' + debugString);
+                });
+            } else {
+                alert('Debug info:\n\n' + debugString);
+            }
+        }
+
+        // Modal functions for cover art
+        let currentModalItem = null;
+        let currentModalType = null;
+
+        async function checkLibraryStatus(item, type, statusElement, downloadBtn) {
+            try {
+                let isInLibrary = false;
+                
+                if (type === 'radarr' && item.tmdbId) {
+                    const movies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
+                    isInLibrary = movies.some(m => m.tmdbId === item.tmdbId);
+                } else if (type === 'sonarr' && item.tvdbId) {
+                    const series = await fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`);
+                    isInLibrary = series.some(s => s.tvdbId === item.tvdbId);
+                }
+                
+                if (isInLibrary) {
+                    statusElement.textContent = '✓ In Library';
+                    statusElement.className = 'modal-library-status in-library';
+                    downloadBtn.style.display = 'none';
+                } else {
+                    statusElement.textContent = 'Not in Library';
+                    statusElement.className = 'modal-library-status not-in-library';
+                    downloadBtn.style.display = 'inline-block';
+                    
+                    // Style download button based on type
+                    downloadBtn.className = 'download-btn';
+                    if (type === 'radarr') {
+                        downloadBtn.classList.add('radarr');
+                    }
+                    downloadBtn.textContent = type === 'radarr' ? 'Add Movie' : 'Add Series';
+                }
+            } catch (error) {
+                console.error('Error checking library status:', error);
+                statusElement.textContent = 'Status Unknown';
+                statusElement.className = 'modal-library-status not-in-library';
+            }
+        }
+
+        async function showCover(item, type) {
+            console.log('Showing cover for item:', item.title);
+            console.log('Type:', type);
+
+            // Store current item and type for download button
+            currentModalItem = item;
+            currentModalType = type;
+
+            const modal = document.getElementById('coverModal');
+            const modalCover = document.getElementById('modalCover');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalYear = document.getElementById('modalYear');
+            const modalOverview = document.getElementById('modalOverview');
+            const modalDownloadBtn = document.getElementById('modalDownloadBtn');
+            const modalLibraryStatus = document.getElementById('modalLibraryStatus');
+            const directorySelect = document.getElementById('directorySelect');
+
+            // Set basic content first
+            modalTitle.textContent = item.title || 'Unknown';
+            modalYear.textContent = item.year ? `Year: ${item.year}` : '';
+            modalOverview.textContent = item.overview || 'No overview available';
+
+            // Fetch and populate root folders based on type
+            try {
+                const config = type === 'sonarr' ? SONARR_CONFIG : RADARR_CONFIG;
+                const response = await fetchWithFallback(config, `/api/v3/rootfolder?apiKey=${config.apiKey}`);
+                if (response.ok) {
+                    const rootFolders = await response.json();
+                    const defaultRootFolder = config.defaultRootFolder || '';
+                    directorySelect.innerHTML = rootFolders.map(folder => 
+                        `<option value="${folder.path}" ${folder.path === defaultRootFolder ? 'selected' : ''}>${folder.path}</option>`
+                    ).join('');
+                } else {
+                    directorySelect.innerHTML = '<option value="">Failed to load directories</option>';
+                }
+            } catch (error) {
+                console.error('Error fetching root folders:', error);
+                directorySelect.innerHTML = '<option value="">Failed to load directories</option>';
+            }
+
+            // Check if item is already in library and update status tag
+            checkLibraryStatus(item, type, modalLibraryStatus, modalDownloadBtn);
+
+            // Try to get poster from Sonarr/Radarr API using the ID
+            let coverUrl = '';
+            try {
+                if (type === 'sonarr' && item.tvdbId) {
+                    const response = await fetchWithFallback(
+                        SONARR_CONFIG,
+                        `/api/v3/series/lookup?term=tvdb:${item.tvdbId}&apiKey=${SONARR_CONFIG.apiKey}`
+                    );
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.length > 0 && data[0].poster) {
+                            coverUrl = data[0].poster;
+                            // Prepend Sonarr URL if it's a relative path
+                            if (coverUrl.startsWith('/')) {
+                                coverUrl = `${response.baseUrl || SONARR_CONFIG.url}${coverUrl}`;
+                            }
+                        } else if (data && data.length > 0 && data[0].images && data[0].images.length > 0) {
+                            coverUrl = data[0].images[0].url;
+                            // Prepend Sonarr URL if it's a relative path
+                            if (coverUrl.startsWith('/')) {
+                                coverUrl = `${response.baseUrl || SONARR_CONFIG.url}${coverUrl}`;
+                            }
+                        }
+                    }
+                } else if (type === 'radarr' && item.tmdbId) {
+                    const response = await fetchWithFallback(
+                        RADARR_CONFIG,
+                        `/api/v3/movie/lookup?term=tmdb:${item.tmdbId}&apiKey=${RADARR_CONFIG.apiKey}`
+                    );
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.length > 0 && data[0].poster) {
+                            coverUrl = data[0].poster;
+                            // Prepend Radarr URL if it's a relative path
+                            if (coverUrl.startsWith('/')) {
+                                coverUrl = `${response.baseUrl || RADARR_CONFIG.url}${coverUrl}`;
+                            }
+                        } else if (data && data.length > 0 && data[0].images && data[0].images.length > 0) {
+                            coverUrl = data[0].images[0].url;
+                            // Prepend Radarr URL if it's a relative path
+                            if (coverUrl.startsWith('/')) {
+                                coverUrl = `${response.baseUrl || RADARR_CONFIG.url}${coverUrl}`;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching poster:', error);
+            }
+
+            // Fallback to TVDB artwork URL
+            if (!coverUrl && item.tvdbId) {
+                coverUrl = `https://artworks.thetvdb.com/banners/posters/${item.tvdbId}-1.jpg`;
+            }
+
+            // Set modal content with error handling
+            modalCover.onerror = function() {
+                console.error('Image failed to load');
+                this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"><rect fill="%231a1a2e" width="400" height="600"/><text x="50%" y="50%" fill="%23ffffff" font-size="24" text-anchor="middle" dy=".3em">No Cover Art</text></svg>';
+            };
+
+            modalCover.src = coverUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"><rect fill="%231a1a2e" width="400" height="600"/><text x="50%" y="50%" fill="%23ffffff" font-size="24" text-anchor="middle" dy=".3em">No Cover Art</text></svg>';
+
+            // Show modal
+            modal.classList.add('active');
+        }
+
+        function modalDownload() {
+            if (!currentModalItem || !currentModalType) return;
+            
+            const directorySelect = document.getElementById('directorySelect');
+            const selectedDirectory = directorySelect.value;
+            
+            if (currentModalType === 'sonarr') {
+                addSeries(currentModalItem, selectedDirectory);
+            } else if (currentModalType === 'radarr') {
+                addMovie(currentModalItem, selectedDirectory);
+            }
+            
+            closeModal();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('coverModal');
+            modal.classList.remove('active');
+        }
+
+        // Close modal when clicking outside content
+        document.getElementById('coverModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // SABnzbd functions
+        async function fetchSabnzbdDownloads() {
+            try {
+                const response = await fetchWithFallback(
+                    SABNZBD_CONFIG,
+                    `/api?mode=queue&output=json&apikey=${SABNZBD_CONFIG.apiKey}`
+                );
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('SABnzbd error response:', errorText);
+                    throw new Error(`SABnzbd API error: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('SABnzbd fetch error:', error);
+                throw error;
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function formatTimeLeft(timeString) {
+            // Handle both seconds (number) and "HH:MM:SS" string format
+            if (!timeString) return 'Unknown';
+            
+            if (typeof timeString === 'number') {
+                if (timeString <= 0) return 'Unknown';
+                if (timeString < 60) return `${Math.round(timeString)}s`;
+                if (timeString < 3600) return `${Math.round(timeString / 60)}m`;
+                if (timeString < 86400) return `${Math.round(timeString / 3600)}h`;
+                return `${Math.round(timeString / 86400)}d`;
+            }
+            
+            // Parse "HH:MM:SS" format
+            if (typeof timeString === 'string') {
+                const parts = timeString.split(':');
+                if (parts.length === 3) {
+                    const hours = parseInt(parts[0]) || 0;
+                    const minutes = parseInt(parts[1]) || 0;
+                    const seconds = parseInt(parts[2]) || 0;
+                    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                    
+                    if (totalSeconds <= 0) return 'Unknown';
+                    if (totalSeconds < 60) return `${seconds}s`;
+                    if (totalSeconds < 3600) return `${minutes}m ${seconds}s`;
+                    if (totalSeconds < 86400) return `${hours}h ${minutes}m`;
+                    return `${hours}h ${minutes}m`;
+                }
+            }
+            
+            return 'Unknown';
+        }
+
+        function displaySabnzbdDownloads(data) {
+            const container = document.getElementById('sabnzbdProgress');
+            
+            if (!data || !data.queue || !data.queue.slots || data.queue.slots.length === 0) {
+                container.innerHTML = '<div class="no-results">No active downloads</div>';
+                return;
+            }
+
+            const downloads = data.queue.slots;
+            
+            container.innerHTML = downloads.map(slot => {
+                // SABnzbd API returns percentage as a string, convert to number
+                const progress = parseFloat(slot.percentage) || 0;
+                const sizeTotal = parseFloat(slot.mb) || 0; // SABnzbd uses 'mb' for size in megabytes
+                const sizeLeft = parseFloat(slot.mbleft) || 0; // SABnzbd uses 'mbleft' for size left in megabytes
+                const sizeDownloaded = sizeTotal - sizeLeft;
+                const eta = slot.timeleft; // SABnzbd returns timeleft as "HH:MM:SS" string
+
+                return `
+                    <div class="download-item">
+                        <div class="download-title">${slot.filename || 'Unknown'}</div>
+                        <div class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                        </div>
+                        <div class="download-info">
+                            <span>${sizeDownloaded.toFixed(2)} MB / ${sizeTotal.toFixed(2)} MB (${progress.toFixed(1)}%)</span>
+                            <span class="download-eta">ETA: ${formatTimeLeft(eta)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function updateSabnzbdDownloads() {
+            try {
+                const data = await fetchSabnzbdDownloads();
+                displaySabnzbdDownloads(data);
+            } catch (error) {
+                console.error('Failed to update SABnzbd downloads:', error);
+                document.getElementById('sabnzbdProgress').innerHTML = '<div class="error">Failed to load downloads. Make sure SABnzbd is running and accessible.</div>';
+            }
+        }
+
+        // History functions
+        let historyData = [];
+        let allHistoryData = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
+        async function fetchSabnzbdHistory() {
+            try {
+                console.log('SABnzbd Config URL:', SABNZBD_CONFIG.url);
+                
+                if ((!SABNZBD_CONFIG.url && !SABNZBD_CONFIG.tailscaleUrl) || !SABNZBD_CONFIG.apiKey) {
+                    console.error('SABnzbd config is missing URL or API key');
+                    throw new Error('SABnzbd configuration is incomplete. Please configure URL and API key in settings.');
+                }
+                
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                
+                const response = await fetchWithFallback(
+                    SABNZBD_CONFIG,
+                    `/api?mode=history&output=json&limit=20000&apikey=${SABNZBD_CONFIG.apiKey}`
+                );
+                
+                console.log('SABnzbd history response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('SABnzbd history error response:', errorText);
+                    throw new Error(`SABnzbd history API error: ${response.status} - ${errorText}`);
+                }
+                
+                const data = await response.json();
+                console.log('SABnzbd history data:', data);
+                
+                // Store all history for statistics calculation
+                if (data && data.history && data.history.slots) {
+                    allHistoryData = data.history.slots;
+                    
+                    // Filter history to only include items from the past 30 days for display
+                    historyData = data.history.slots.filter(slot => {
+                        const completedTime = new Date(slot.completed * 1000);
+                        return completedTime >= thirtyDaysAgo;
+                    });
+                    console.log('Filtered history data (past 30 days):', historyData);
+                    console.log('Total history items for stats:', allHistoryData.length);
+                } else {
+                    historyData = [];
+                    allHistoryData = [];
+                    console.log('No history data found or unexpected structure');
+                }
+                
+                return historyData;
+            } catch (error) {
+                console.error('SABnzbd history fetch error:', error);
+                throw error;
+            }
+        }
+
+        function parseSizeToBytes(sizeStr) {
+            if (!sizeStr) return 0;
+            const match = sizeStr.match(/^([\d.]+)\s*(\w+)$/i);
+            if (!match) return 0;
+            const value = parseFloat(match[1]);
+            const unit = match[2].toUpperCase();
+            
+            const units = {
+                'B': 1,
+                'KB': 1024,
+                'MB': 1024 * 1024,
+                'GB': 1024 * 1024 * 1024,
+                'TB': 1024 * 1024 * 1024 * 1024
+            };
+            
+            return value * (units[unit] || 1);
+        }
+
+        function calculateDownloadStats() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            let todayBytes = 0;
+            let monthBytes = 0;
+            
+            // Use allHistoryData for statistics to get accurate monthly totals
+            allHistoryData.forEach(slot => {
+                const completedTime = new Date(slot.completed * 1000);
+                const sizeBytes = parseSizeToBytes(slot.size);
+                
+                if (completedTime >= today) {
+                    todayBytes += sizeBytes;
+                }
+                
+                if (completedTime >= thisMonth) {
+                    monthBytes += sizeBytes;
+                }
+            });
+            
+            return {
+                today: formatBytes(todayBytes),
+                month: formatBytes(monthBytes)
+            };
+        }
+
+        function displaySabnzbdHistory() {
+            const container = document.getElementById('sabnzbdHistory');
+            
+            if (!historyData || historyData.length === 0) {
+                container.innerHTML = '<div class="no-results">No history in the past 30 days</div>';
+                return;
+            }
+
+            const stats = calculateDownloadStats();
+
+            const totalPages = Math.ceil(historyData.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = historyData.slice(startIndex, endIndex);
+
+            let html = `<div class="download-stats">
+                <div class="stat-item">
+                    <div class="stat-label">Downloaded Today</div>
+                    <div class="stat-value">${stats.today}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Downloaded This Month</div>
+                    <div class="stat-value">${stats.month}</div>
+                </div>
+            </div>`;
+
+            html += pageData.map(slot => {
+                const completedTime = new Date(slot.completed * 1000);
+                const formattedDate = completedTime.toLocaleString();
+                // SABnzbd returns size already formatted (e.g., "4.0 GB")
+                const formattedSize = slot.size || 'Unknown';
+
+                return `
+                    <div class="download-item">
+                        <div class="download-title">${slot.name || 'Unknown'}</div>
+                        <div class="download-info">
+                            <span>Completed: ${formattedDate}</span>
+                            <span>Size: ${formattedSize}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Add pagination controls
+            html += '<div class="pagination">';
+            
+            // Previous button
+            html += `<button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>`;
+            
+            // Smart page number display
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            // Always show first page
+            if (startPage > 1) {
+                html += `<button onclick="changePage(1)" ${currentPage === 1 ? 'class="active"' : ''}>1</button>`;
+                if (startPage > 2) {
+                    html += '<span class="pagination-ellipsis">...</span>';
+                }
+            }
+            
+            // Show range of pages around current page
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button onclick="changePage(${i})" ${i === currentPage ? 'class="active"' : ''}>${i}</button>`;
+            }
+            
+            // Always show last page
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += '<span class="pagination-ellipsis">...</span>';
+                }
+                html += `<button onclick="changePage(${totalPages})" ${currentPage === totalPages ? 'class="active"' : ''}>${totalPages}</button>`;
+            }
+            
+            // Next button
+            html += `<button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>`;
+            
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        function changePage(page) {
+            const totalPages = Math.ceil(historyData.length / itemsPerPage);
+            if (page < 1 || page > totalPages) return;
+            
+            currentPage = page;
+            displaySabnzbdHistory();
+        }
+
+        function switchSabnzbdTab(tab) {
+            const tabs = document.querySelectorAll('.sabnzbd-tab');
+            const progressContainer = document.getElementById('sabnzbdProgress');
+            const historyContainer = document.getElementById('sabnzbdHistory');
+            
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            if (tab === 'progress') {
+                tabs[0].classList.add('active');
+                progressContainer.style.display = 'block';
+                historyContainer.style.display = 'none';
+            } else if (tab === 'history') {
+                tabs[1].classList.add('active');
+                progressContainer.style.display = 'none';
+                historyContainer.style.display = 'block';
+                currentPage = 1;
+                fetchSabnzbdHistory().then(() => displaySabnzbdHistory()).catch(error => {
+                    console.error('Failed to load history:', error);
+                    historyContainer.innerHTML = '<div class="error">Failed to load history. Make sure SABnzbd is running and accessible.</div>';
+                });
+            }
+        }
+
+        // Initial fetch and auto-refresh every 1 second for live updates
+        updateSabnzbdDownloads();
+        setInterval(updateSabnzbdDownloads, 1000);
