@@ -1345,6 +1345,13 @@
                 directorySelect.innerHTML = '<option value="">Failed to load directories</option>';
             }
 
+            // Set modal download button text based on type
+            modalDownloadBtn.textContent = type === 'radarr' ? 'Add Movie' : 'Add Series';
+            modalDownloadBtn.className = 'download-btn';
+            if (type === 'radarr') {
+                modalDownloadBtn.classList.add('radarr');
+            }
+
             // Check if item is already in library and update status tag
             checkLibraryStatus(item, type, modalLibraryStatus, modalDownloadBtn);
 
