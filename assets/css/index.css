@@ -449,6 +449,14 @@
             margin-bottom: 2rem;
         }
 
+        .calendar-container.series-only {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .movie-calendar-disabled {
+            display: none;
+        }
+
         .calendar-section {
             background: var(--bg-secondary);
             border-radius: 16px;

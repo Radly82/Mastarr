@@ -5,193 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>About - Radarr & Sonarr Search</title>
     <link rel="icon" href="MA.png" type="image/png">
-    <style>
-        :root {
-            --bg-primary: #0a0a0a;
-            --bg-secondary: #111111;
-            --bg-tertiary: #1a1a1a;
-            --text-primary: #e0e0e0;
-            --text-secondary: rgba(224, 224, 224, 0.6);
-            --accent-sonarr: #00d4ff;
-            --accent-radarr: #7b2cbf;
-            --border-color: rgba(255, 255, 255, 0.08);
-        }
-
-        [data-theme="blue"] {
-            --bg-primary: #0a1929;
-            --bg-secondary: #102a43;
-            --bg-tertiary: #1a3a5c;
-            --text-primary: #e3f2fd;
-            --text-secondary: rgba(227, 242, 253, 0.6);
-            --accent-sonarr: #00d4ff;
-            --accent-radarr: #7b2cbf;
-            --border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        [data-theme="green"] {
-            --bg-primary: #0a1a0a;
-            --bg-secondary: #102a10;
-            --bg-tertiary: #1a3a1a;
-            --text-primary: #e3fde3;
-            --text-secondary: rgba(227, 253, 227, 0.6);
-            --accent-sonarr: #00ff88;
-            --accent-radarr: #7b2cbf;
-            --border-color: rgba(255, 255, 255, 0.1);
-        }
-
-        [data-theme="80s"] {
-            --bg-primary: #1a0a2e;
-            --bg-secondary: #2d1b4e;
-            --bg-tertiary: #3d2a6e;
-            --text-primary: #ff6b9d;
-            --text-secondary: rgba(255, 107, 157, 0.6);
-            --accent-sonarr: #ff00ff;
-            --accent-radarr: #00ffff;
-            --border-color: rgba(255, 107, 157, 0.3);
-        }
-
-        [data-theme="theatre"] {
-            --bg-primary: #1a0a0a;
-            --bg-secondary: #2d1a1a;
-            --bg-tertiary: #3d2a2a;
-            --text-primary: #ffd700;
-            --text-secondary: rgba(255, 215, 0, 0.6);
-            --accent-sonarr: #ff4444;
-            --accent-radarr: #ff8800;
-            --border-color: rgba(255, 215, 0, 0.3);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            padding: 2rem;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .back-button {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            margin-bottom: 2rem;
-        }
-
-        .back-button:hover {
-            background: var(--bg-tertiary);
-            border-color: var(--accent-sonarr);
-            transform: translateX(-5px);
-        }
-
-        .about-header {
-            text-align: center;
-            margin-bottom: 3rem;
-        }
-
-        .about-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, var(--accent-sonarr), var(--accent-radarr));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .about-header .version {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-        }
-
-        .section {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .section h2 {
-            font-size: 1.5rem;
-            margin-bottom: 1.5rem;
-            color: var(--accent-sonarr);
-        }
-
-        .info-item {
-            margin-bottom: 1rem;
-        }
-
-        .info-item label {
-            display: block;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 0.25rem;
-        }
-
-        .info-item p {
-            font-size: 1.1rem;
-            color: var(--text-primary);
-        }
-
-        .contact-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: var(--bg-tertiary);
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-
-        .contact-item:last-child {
-            margin-bottom: 0;
-        }
-
-        .contact-item .icon {
-            font-size: 1.5rem;
-        }
-
-        .contact-item .label {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .contact-item .value {
-            font-size: 1.1rem;
-            color: var(--text-primary);
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 1rem;
-            }
-
-            .about-header h1 {
-                font-size: 2rem;
-            }
-
-            .section {
-                padding: 1.5rem;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/about.css">
 </head>
 <body>
     <div class="container">
@@ -200,76 +14,46 @@
         </button>
 
         <div class="about-header">
-            <h1>About</h1>
+            <h1>Mastarr</h1>
             <div class="version">Version 0.1</div>
         </div>
 
         <div class="section">
-            <h2>Company Information</h2>
+            <h2>Legal</h2>
             <div class="info-item">
-                <label>Company Name</label>
-                <p>Your Company Name</p>
-            </div>
-            <div class="info-item">
-                <label>Description</label>
-                <p>Your company description goes here.</p>
-            </div>
-            <div class="info-item">
-                <label>Founded</label>
-                <p>2024</p>
+                <label>License & Distribution Notice</label>
+                <p>Copyright © 2026. All Rights Reserved.</p>
+                <p>This software is proprietary freeware. It is provided free of charge for personal, non-commercial use.</p>
+                <p>You are allowed to:</p>
+                <p>-Download and use the software for free on your own devices.</p>
+                <p>You are not allowed to:</p>
+                <p>-Redistribute, share, or repackage the software</p>
+                <p>-Sell the software (or any modified version of it)</p>
+                <p>-Bundle it with other software or products</p>
+                <p>-Host it on other websites for download</p>
+                <p>Any distribution, resale, or commercial use requires explicit written permission from the copyright holder.</p>
+                <div class="legal-small">
+                    <strong>Warranty Disclaimer</strong>
+                    <p>This software is provided "AS IS", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement.</p>
+                    <p>In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.</p>
+                </div>
             </div>
         </div>
 
         <div class="section">
             <h2>Contact Information</h2>
             <div class="contact-item">
-                <div class="icon">📧</div>
+                <div class="icon">📬</div>
                 <div>
                     <div class="label">Email</div>
-                    <div class="value">contact@example.com</div>
-                </div>
-            </div>
-            <div class="contact-item">
-                <div class="icon">🌐</div>
-                <div>
-                    <div class="label">Website</div>
-                    <div class="value">www.example.com</div>
-                </div>
-            </div>
-            <div class="contact-item">
-                <div class="icon">📍</div>
-                <div>
-                    <div class="label">Address</div>
-                    <div class="value">123 Main Street, City, Country</div>
-                </div>
-            </div>
-            <div class="contact-item">
-                <div class="icon">📱</div>
-                <div>
-                    <div class="label">Phone</div>
-                    <div class="value">+1 (555) 123-4567</div>
+                    <div class="value">Contact via the GitHub issue tracker</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        // Load theme from localStorage
-        function loadTheme() {
-            const savedTheme = localStorage.getItem('theme') || 'dark';
-            const html = document.documentElement;
-            
-            // Remove all theme attributes
-            html.removeAttribute('data-theme');
-            
-            // Set the selected theme
-            if (savedTheme !== 'dark') {
-                html.setAttribute('data-theme', savedTheme);
-            }
-        }
-
-        // Load theme on page load
-        loadTheme();
-    </script>
+    <script src="assets/js/about.js"></script>
 </body>
 </html>
+
+

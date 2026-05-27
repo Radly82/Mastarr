@@ -39,7 +39,7 @@
         
         <div class="search-container">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search for Movies or Series..." onkeypress="if(event.key === 'Enter') searchBoth()" onclick="this.focus()" onmousedown="this.focus()" />
+                <input type="text" id="searchInput" placeholder="Search for Movies or Series..." onclick="this.focus()" onmousedown="this.focus()" />
                 <button id="searchBtn" onclick="searchBoth()">Search</button>
             </div>
             <div id="errorContainer"></div>
@@ -60,7 +60,7 @@
             </div>
         </div>
 
-        <div class="calendar-container">
+        <div class="calendar-container series-only">
             <div class="calendar-section">
                 <div class="calendar-header sonarr-header collapsed" onclick="toggleCalendar('sonarrCalendar')">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
@@ -74,7 +74,7 @@
                 </div>
             </div>
 
-            <div class="calendar-section">
+            <div class="calendar-section movie-calendar-disabled">
                 <div class="calendar-header radarr-header collapsed" onclick="toggleCalendar('radarrCalendar')">
                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                         <img src="https://raw.githubusercontent.com/Radarr/Radarr/develop/Logo/Radarr.svg" alt="Radarr" class="service-icon" />

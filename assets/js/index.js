@@ -70,9 +70,10 @@
         let SONARR_CONFIG;
         let RADARR_CONFIG;
         let SABNZBD_CONFIG;
+        let configReady = false;
 
         // Initialize config with error handling
-        loadConfig().then(loadedConfig => {
+        const configReadyPromise = loadConfig().then(loadedConfig => {
             config = loadedConfig;
             SONARR_CONFIG = {
                 url: config.sonarr.url,
@@ -94,6 +95,8 @@
                 apiKey: config.sabnzbd.apiKey
             };
 
+            configReady = true;
+
             // Load calendars after config is loaded
             loadCalendars();
             updateSabnzbdDownloads();
@@ -108,7 +111,14 @@
             SONARR_CONFIG = config.sonarr;
             RADARR_CONFIG = config.radarr;
             SABNZBD_CONFIG = config.sabnzbd;
+            configReady = true;
         });
+
+        async function waitForConfig() {
+            if (!configReady) {
+                await configReadyPromise;
+            }
+        }
 
         function getServiceUrls(config) {
             return [config.url, config.tailscaleUrl].filter(Boolean);
@@ -118,11 +128,9 @@
             const urls = getServiceUrls(config);
             if (urls.length === 0) throw new Error('No service URL configured');
 
-            const TIMEOUT_MS = 5000;
-
-            function fetchWithTimeout(baseUrl) {
+            function fetchWithTimeout(baseUrl, timeoutMs) {
                 const controller = new AbortController();
-                const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+                const timer = setTimeout(() => controller.abort(), timeoutMs);
                 return fetch(`${baseUrl}${path}`, { ...options, signal: controller.signal })
                     .then(response => {
                         clearTimeout(timer);
@@ -139,22 +147,29 @@
             }
 
             if (urls.length === 1) {
-                return fetchWithTimeout(urls[0]);
+                return fetchWithTimeout(urls[0], 15000);
             }
 
-            // Race all URLs simultaneously, return first success
-            return new Promise((resolve, reject) => {
+            function raceUrls(timeoutMs) {
+                return new Promise((resolve, reject) => {
                 let errors = 0;
                 const total = urls.length;
                 urls.forEach(baseUrl => {
-                    fetchWithTimeout(baseUrl)
+                    fetchWithTimeout(baseUrl, timeoutMs)
                         .then(resolve)
                         .catch(() => {
                             errors++;
                             if (errors === total) reject(new Error('All service URLs failed or timed out'));
                         });
                 });
-            });
+                });
+            }
+
+            try {
+                return await raceUrls(5000);
+            } catch (error) {
+                return await raceUrls(15000);
+            }
         }
 
         async function fetchJsonWithFallback(config, path, options) {
@@ -269,6 +284,8 @@
         // Calendar functions
         async function fetchSonarrCalendar() {
             try {
+                await waitForConfig();
+
                 const now = new Date();
                 const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
                 const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -287,9 +304,11 @@
 
         async function fetchRadarrCalendar() {
             try {
+                await waitForConfig();
+
                 const now = new Date();
-                const startDate = now;
-                const endDate = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+                const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
                 
                 const response = await fetchWithFallback(
                     RADARR_CONFIG,
@@ -362,51 +381,50 @@
                 return;
             }
 
-            // Fetch existing movies from library to filter out
-            try {
-                const existingMovies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
-                const existingMovieIds = new Set(existingMovies.map(m => m.tmdbId));
-                
-                // Filter out movies that are already in the library
-                const upcomingMovies = items.filter(item => !existingMovieIds.has(item.tmdbId));
-                
-                if (upcomingMovies.length === 0) {
-                    container.innerHTML = '<div class="no-results">No upcoming movies</div>';
-                    return;
+            const today = new Date();
+            today.setHours(23, 59, 59, 999);
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            const upcomingMovies = items.filter(item => {
+                if (!item.monitored || item.hasFile) return false;
+
+                const status = String(item.status || '').toLowerCase();
+                const releaseDates = [
+                    item.digitalRelease,
+                    item.physicalRelease,
+                    item.inCinemas
+                ].filter(Boolean);
+
+                if (status && ['released', 'available'].includes(status)) {
+                    return true;
                 }
 
-                container.innerHTML = upcomingMovies.map(item => {
-                    const title = item.title || 'Unknown';
-                    const releaseDate = item.inCinemas || item.digitalRelease || item.physicalRelease;
-                    const dateStr = releaseDate ? new Date(releaseDate).toLocaleDateString() : 'Unknown date';
-                    const year = item.year || 'Unknown';
-
-                    return `
-                        <div class="calendar-item">
-                            <div class="calendar-date">${dateStr}</div>
-                            <div class="calendar-title">${title}</div>
-                            <div class="calendar-episode">${year}</div>
-                        </div>
-                    `;
-                }).join('');
-            } catch (error) {
-                console.error('Error filtering movies:', error);
-                // If filtering fails, show all items
-                container.innerHTML = items.map(item => {
-                    const title = item.title || 'Unknown';
-                    const releaseDate = item.inCinemas || item.digitalRelease || item.physicalRelease;
-                    const dateStr = releaseDate ? new Date(releaseDate).toLocaleDateString() : 'Unknown date';
-                    const year = item.year || 'Unknown';
-
-                    return `
-                        <div class="calendar-item">
-                            <div class="calendar-date">${dateStr}</div>
-                            <div class="calendar-title">${title}</div>
-                            <div class="calendar-episode">${year}</div>
-                        </div>
-                    `;
-                }).join('');
+                return releaseDates.some(releaseDate => {
+                    const date = new Date(releaseDate);
+                    return date >= startOfMonth && date <= endOfMonth && date <= today;
+                });
+            });
+            
+            if (upcomingMovies.length === 0) {
+                container.innerHTML = '<div class="no-results">No missing monitored movies</div>';
+                return;
             }
+
+            container.innerHTML = upcomingMovies.map(item => {
+                const title = item.title || 'Unknown';
+                const releaseDate = item.inCinemas || item.digitalRelease || item.physicalRelease;
+                const dateStr = releaseDate ? new Date(releaseDate).toLocaleDateString() : 'Unknown date';
+                const year = item.year || 'Unknown';
+
+                return `
+                    <div class="calendar-item">
+                        <div class="calendar-date">${dateStr}</div>
+                        <div class="calendar-title">${title}</div>
+                        <div class="calendar-episode">${year}</div>
+                    </div>
+                `;
+            }).join('');
         }
 
         async function loadCalendars() {
@@ -927,6 +945,8 @@
         }
 
         async function searchBoth() {
+            await waitForConfig();
+
             const query = document.getElementById('searchInput').value.trim();
             const searchBtn = document.getElementById('searchBtn');
             
@@ -1232,6 +1252,12 @@
         // SABnzbd functions
         async function fetchSabnzbdDownloads() {
             try {
+                await waitForConfig();
+
+                if ((!SABNZBD_CONFIG.url && !SABNZBD_CONFIG.tailscaleUrl) || !SABNZBD_CONFIG.apiKey) {
+                    throw new Error('SABnzbd configuration is incomplete. Please configure URL and API key in settings.');
+                }
+
                 const response = await fetchWithFallback(
                     SABNZBD_CONFIG,
                     `/api?mode=queue&output=json&apikey=${SABNZBD_CONFIG.apiKey}`
@@ -1344,6 +1370,8 @@
 
         async function fetchSabnzbdHistory() {
             try {
+                await waitForConfig();
+
                 console.log('SABnzbd Config URL:', SABNZBD_CONFIG.url);
                 
                 if ((!SABNZBD_CONFIG.url && !SABNZBD_CONFIG.tailscaleUrl) || !SABNZBD_CONFIG.apiKey) {
@@ -1559,6 +1587,5 @@
             }
         }
 
-        // Initial fetch and auto-refresh every 1 second for live updates
-        updateSabnzbdDownloads();
+        // Auto-refresh every 1 second for live updates
         setInterval(updateSabnzbdDownloads, 1000);
