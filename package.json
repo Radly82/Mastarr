@@ -20,6 +20,7 @@
       "about.html",
       "main.js",
       "preload.js",
+      "assets/**/*",
       "MA.png",
       "ma1.ico"
     ],
