@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MastARR - Glassmorphism Style Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Glass Card Base */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #e94560, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Search Section */
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 15px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px 25px;
+            color: #fff;
+            font-size: 1.1rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .search-btn {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            border: none;
+            border-radius: 15px;
+            padding: 15px 30px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        /* Grid Layout */
+        .grid-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .result-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-poster {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #2a2a4a, #1a1a3e);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .poster-fallback {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .result-title {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .result-year {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* SABnzbd Section */
+        .sabnzbd-section {
+            margin-bottom: 30px;
+        }
+
+        .download-item {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .download-title {
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e94560, #ff6b6b);
+            border-radius: 4px;
+            width: 65%;
+        }
+
+        .download-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* SABnzbd Tabs */
+        .sabnzbd-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .sabnzbd-tab {
+            padding: 12px 25px;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.6);
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .sabnzbd-tab:hover {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .sabnzbd-tab.active {
+            color: #fff;
+            border-bottom-color: #e94560;
+        }
+
+        /* Collapse Icon */
+        .collapse-icon {
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        /* Section Header */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .calendar-list {
+            margin-top: 15px;
+        }
+
+        .calendar-list[style*="display: none"] {
+            margin-top: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Calendar Section */
+        .calendar-item {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .calendar-date {
+            font-size: 0.85rem;
+            color: #e94560;
+            font-weight: bold;
+        }
+
+        .calendar-title {
+            font-size: 1rem;
+        }
+
+        .calendar-episode {
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Netflix Style Navigation */
+        .netflix-nav {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            padding: 20px 4%;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            margin: -20px -20px 30px -20px;
+        }
+
+        .netflix-logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e50914;
+        }
+
+        .netflix-menu {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .netflix-menu a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .netflix-menu a:hover {
+            opacity: 0.7;
+        }
+
+        .netflix-menu a.active {
+            font-weight: bold;
+        }
+
+        /* History Button */
+        .history-btn {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            border: none;
+            border-radius: 12px;
+            padding: 8px 16px;
+            color: #fff;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+
+        .history-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(233, 69, 96, 0.4);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            overflow: auto;
+        }
+
+        .modal-content {
+            background: rgba(26, 26, 46, 0.95);
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 700px;
+            border: 1px solid rgba(42, 42, 74, 0.5);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid rgba(42, 42, 74, 0.5);
+        }
+
+        .modal-close {
+            color: #a0a0b0;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #fff;
+        }
+
+        .modal-body {
+            display: flex;
+            gap: 25px;
+            padding: 25px;
+        }
+
+        .modal-poster {
+            width: 200px;
+            height: 300px;
+            background: rgba(15, 15, 26, 0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .modal-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .modal-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+        }
+
+        .modal-year {
+            font-size: 0.9rem;
+            color: #a0a0b0;
+        }
+
+        .modal-rating {
+            font-size: 0.9rem;
+            color: #ffd700;
+            font-weight: 600;
+        }
+
+        .modal-meta {
+            display: flex;
+            gap: 15px;
+            margin-top: 4px;
+        }
+
+        .modal-season-count {
+            font-size: 0.85rem;
+            color: #a0a0b0;
+            font-weight: 500;
+        }
+
+        .modal-status {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .modal-status.concluded {
+            color: #e50914;
+        }
+
+        .modal-status.continuing {
+            color: #4caf50;
+        }
+
+        .modal-overview {
+            font-size: 0.9rem;
+            color: #a0a0b0;
+            line-height: 1.6;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: auto;
+        }
+
+        .modal-directory-select {
+            background: rgba(15, 15, 26, 0.5);
+            border: 1px solid rgba(42, 42, 74, 0.5);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: #fff;
+            font-size: 0.9rem;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .modal-directory-select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-library-status {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 8px 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        .modal-library-status.in-library {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+        }
+
+        .modal-library-status.not-in-library {
+            background: rgba(229, 9, 20, 0.2);
+            color: #e50914;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .download-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .download-btn:disabled {
+            background: #3a3a5a;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .download-btn.radarr {
+            background: linear-gradient(135deg, #e50914, #ff6b6b);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 600px) {
+            .modal-body {
+                flex-direction: column;
+            }
+
+            .modal-poster {
+                width: 100%;
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script src="assets/js/index.js"></script>
+    <!-- Netflix Style Navigation -->
+    <nav class="netflix-nav">
+        <div class="netflix-menu">
+            <a href="layouts.html" class="active">🎨 Layouts</a>
+            <a href="settings.html">⚙️ Settings</a>
+            <a href="about.html">ℹ️ About</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header glass-card">
+            <div class="logo">MastARR</div>
+        </div>
+
+        <div class="search-section glass-card">
+            <div class="search-box">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search for Movies or Series...">
+                <button id="searchBtn" class="search-btn">Search</button>
+            </div>
+        </div>
+
+        <div class="grid-section">
+            <div class="glass-card">
+                <h3 class="section-title">📺 Series Results</h3>
+                <div class="results-grid" id="sonarrRecentSeries">
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <h3 class="section-title">🎬 Movie Results</h3>
+                <div class="results-grid" id="radarrRecentMovies">
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Results Containers -->
+        <div id="sonarrResults" style="display: none;"></div>
+        <div id="radarrResults" style="display: none;"></div>
+
+        <div class="grid-section">
+            <div class="glass-card sabnzbd-section">
+                <h3 class="section-title">⬇️ Download Progress</h3>
+                <div class="sabnzbd-tabs">
+                    <div class="sabnzbd-tab active" onclick="switchSabnzbdTab('progress')">Queue</div>
+                    <div class="sabnzbd-tab" onclick="switchSabnzbdTab('history')">History</div>
+                </div>
+                <div id="sabnzbdProgress">
+                    <div class="loading">Loading downloads...</div>
+                </div>
+                <div id="sabnzbdHistory" class="hidden">
+                    <div class="loading">Loading history...</div>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div class="section-header" onclick="toggleCalendar('sonarrCalendar')">
+                    <h3 class="section-title">📅 Upcoming Releases</h3>
+                    <span class="collapse-icon">▼</span>
+                </div>
+                <div id="sonarrCalendar" class="calendar-list" style="display: none;">
+                    <div class="loading">Loading calendar...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Cover Art -->
+    <div id="coverModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="margin: 0; font-size: 1.2rem;">Details</h2>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="modal-poster">
+                    <img id="modalCover" src="" alt="Poster">
+                </div>
+                <div class="modal-info">
+                    <h3 id="modalTitle" class="modal-title"></h3>
+                    <div id="modalYear" class="modal-year"></div>
+                    <div id="modalRating" class="modal-rating"></div>
+                    <div id="modalMeta" class="modal-meta">
+                        <span id="modalSeasonCount" class="modal-season-count"></span>
+                        <span id="modalStatus" class="modal-status"></span>
+                    </div>
+                    <div id="modalOverview" class="modal-overview"></div>
+                    <div class="modal-actions">
+                        <div id="modalLibraryStatus" class="modal-library-status">Checking...</div>
+                        <select id="directorySelect" class="modal-directory-select">
+                            <option value="">Loading directories...</option>
+                        </select>
+                        <button id="modalDownloadBtn" class="download-btn">Add</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Close modal function
+        function closeModal() {
+            const modal = document.getElementById('coverModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('coverModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        let historyInterval = null;
+        // Initialize currentSabnzbdTab if not defined by index.js
+        if (typeof currentSabnzbdTab === 'undefined') {
+            window.currentSabnzbdTab = 'progress';
+        }
+        
+        // Override switchSabnzbdTab to handle history
+        window.switchSabnzbdTab = function(tab) {
+            console.log('=== frosty.html switchSabnzbdTab override called ===');
+            console.log('Tab:', tab);
+            
+            if (tab === 'history') {
+                console.log('frosty: Handling HISTORY tab locally');
+                if (historyInterval) {
+                    clearInterval(historyInterval);
+                    historyInterval = null;
+                }
+                toggleHistory();
+            } else {
+                console.log('frosty: Delegating QUEUE tab to index.js');
+                if (historyInterval) {
+                    clearInterval(historyInterval);
+                    historyInterval = null;
+                }
+                // Call the original index.js switchSabnzbdTab
+                const tabs = document.querySelectorAll('.sabnzbd-tab');
+                const progressDiv = document.getElementById('sabnzbdProgress');
+                const historyDiv = document.getElementById('sabnzbdHistory');
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                tabs[0].classList.add('active');
+                progressDiv.classList.remove('hidden');
+                progressDiv.style.display = 'block';
+                historyDiv.classList.add('hidden');
+                historyDiv.style.display = 'none';
+            }
+        };
+
+        function toggleHistory() {
+            const progressDiv = document.getElementById('sabnzbdProgress');
+            const historyDiv = document.getElementById('sabnzbdHistory');
+            const historyBtn = document.querySelector('.history-btn');
+            const tabs = document.querySelectorAll('.sabnzbd-tab');
+
+            // Update global tab state to stop polling
+            if (typeof currentSabnzbdTab !== 'undefined') {
+                currentSabnzbdTab = 'history';
+                console.log('frosty: Updated currentSabnzbdTab to:', currentSabnzbdTab);
+            }
+
+            progressDiv.classList.add('hidden');
+            progressDiv.style.display = 'none';
+            historyDiv.classList.remove('hidden');
+            historyDiv.style.display = 'block';
+            historyDiv.style.visibility = 'visible';
+            historyDiv.style.opacity = '1';
+            if (historyBtn) historyBtn.textContent = '📋 View Queue';
+            tabs[0].classList.remove('active');
+            tabs[1].classList.add('active');
+
+            historyDiv.innerHTML = '<div class="loading" style="color: #fff; padding: 20px; text-align: center;">Loading history...</div>';
+            const appSettings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            const sabnzbdUrl = appSettings.sabnzbdUrl;
+            const sabnzbdApiKey = appSettings.sabnzbdApiKey;
+            if (sabnzbdUrl && sabnzbdApiKey) {
+                const historyUrl = `${sabnzbdUrl}/api?mode=history&limit=100&output=json&apikey=${sabnzbdApiKey}`;
+                fetch(historyUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        let history = [];
+                        if (data.history && data.history.slots) {
+                            history = data.history.slots.slice(-10);
+                        }
+                        if (history.length === 0) {
+                            historyDiv.innerHTML = '<div class="no-results" style="color: #fff; padding: 20px; text-align: center;">No history found</div>';
+                            return;
+                        }
+
+                        let html = '<div style="max-height: 280px; overflow-y: auto; display: block; visibility: visible;">';
+                        history.forEach(item => {
+                            const name = item.name || 'Unknown';
+                            const status = item.status || 'Unknown';
+                            const size = item.size || 'Unknown';
+                            const date = item.completed ? new Date(item.completed * 1000).toLocaleDateString() : 'Unknown';
+                            html += `
+                                <div style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 12px; padding: 12px; margin-bottom: 8px; display: block;">
+                                    <div style="color: #fff; font-weight: 600; margin-bottom: 4px;">${name}</div>
+                                    <div style="color: rgba(255, 255, 255, 0.6); font-size: 0.85rem;">
+                                        Status: ${status} | Size: ${size} | Completed: ${date}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        historyDiv.innerHTML = html;
+                        historyDiv.classList.remove('hidden');
+                    })
+                    .catch(err => {
+                        console.error('Failed to load history:', err);
+                        historyDiv.innerHTML = '<div class="error" style="color: #e94560; padding: 10px;">Failed to load history. Make sure SABnzbd is configured in settings.</div>';
+                    });
+            } else {
+                historyDiv.innerHTML = '<div class="error" style="color: #e94560; padding: 10px;">SABnzbd not configured in settings.</div>';
+            }
+        }
+
+        function toggleCalendar(calendarId) {
+            const calendarDiv = document.getElementById(calendarId);
+            const header = event.currentTarget;
+            const icon = header.querySelector('.collapse-icon');
+
+            if (calendarDiv.style.display === 'none') {
+                calendarDiv.style.display = 'block';
+                icon.classList.remove('collapsed');
+            } else {
+                calendarDiv.style.display = 'none';
+                icon.classList.add('collapsed');
+            }
+        }
+
+        // Add event listeners when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            const historyTab = document.querySelector('.sabnzbd-tab:nth-child(2)');
+            const historyBtn = document.querySelector('.history-btn');
+            if (historyTab) {
+                historyTab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleHistory();
+                });
+            }
+            if (historyBtn) {
+                historyBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleHistory();
+                });
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MastARR - Card-Based Layout Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0d1117;
+            min-height: 100vh;
+            padding: 20px;
+            color: #e6edf3;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Card Base */
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #58a6ff;
+        }
+
+        .menu-btn {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 10px 20px;
+            color: #e6edf3;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .menu-btn:hover {
+            background: #30363d;
+        }
+
+        /* Search Section */
+        .search-section {
+            margin-bottom: 25px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input {
+            flex: 1;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px 20px;
+            color: #e6edf3;
+            font-size: 1rem;
+        }
+
+        .search-input::placeholder {
+            color: #8b949e;
+        }
+
+        .search-btn {
+            background: #238636;
+            border: 1px solid #238636;
+            border-radius: 8px;
+            padding: 12px 25px;
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .search-btn:hover {
+            background: #2ea043;
+        }
+
+        /* Grid Layout */
+        .grid-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #e6edf3;
+            font-weight: 600;
+        }
+
+        /* Results Grid */
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 12px;
+        }
+
+        .result-card {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .result-card:hover {
+            border-color: #58a6ff;
+            transform: translateY(-3px);
+        }
+
+        .result-poster {
+            width: 100%;
+            height: 180px;
+            background: #21262d;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #8b949e;
+            font-size: 0.85rem;
+        }
+
+        .result-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: #e6edf3;
+        }
+
+        .result-year {
+            font-size: 0.75rem;
+            color: #8b949e;
+        }
+
+        /* SABnzbd Section */
+        .sabnzbd-section {
+            margin-bottom: 25px;
+        }
+
+        .download-item {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .download-title {
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: #e6edf3;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: #21262d;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #238636;
+            border-radius: 3px;
+            width: 65%;
+        }
+
+        .download-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 6px;
+            font-size: 0.8rem;
+            color: #8b949e;
+        }
+
+        /* Calendar Section */
+        .calendar-item {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .calendar-date {
+            font-size: 0.8rem;
+            color: #58a6ff;
+            font-weight: 600;
+        }
+
+        .calendar-title {
+            font-size: 0.9rem;
+            color: #e6edf3;
+        }
+
+        .calendar-episode {
+            font-size: 0.8rem;
+            color: #8b949e;
+        }
+
+        .mockup-label {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #238636;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="mockup-label">Card-Based Layout</div>
+    <div class="container">
+        <div class="header card">
+            <div class="logo">MastARR</div>
+            <button class="menu-btn">☰ Menu</button>
+        </div>
+
+        <div class="search-section card">
+            <div class="search-box">
+                <input type="text" class="search-input" placeholder="Search for Movies or Series...">
+                <button class="search-btn">Search</button>
+            </div>
+        </div>
+
+        <div class="grid-section">
+            <div class="card">
+                <h3 class="section-title">📺 TV Series Results</h3>
+                <div class="results-grid">
+                    <div class="result-card">
+                        <div class="result-poster">Poster</div>
+                        <div class="result-title">Breaking Bad</div>
+                        <div class="result-year">2008</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-poster">Poster</div>
+                        <div class="result-title">Game of Thrones</div>
+                        <div class="result-year">2011</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-poster">Poster</div>
+                        <div class="result-title">Stranger Things</div>
+                        <div class="result-year">2016</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-poster">Poster</div>
+                        <div class="result-title">The Office</div>
+                        <div class="result-year">2005</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="section-title">🎬 Movie Results</h3>
+                <div class="results-grid">
+                    <div class="result-card">
+                        <div class="result-poster">Poster</div>
+                        <div class="result-title">Inception</div>
+                        <div class="result-year">2010</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-poster">Poster</div>
+                        <div class="result-title">The Dark Knight</div>
+                        <div class="result-year">2008</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-poster">Poster</div>
+                        <div class="result-title">Interstellar</div>
+                        <div class="result-year">2014</div>
+                    </div>
+                    <div class="result-card">
+                        <div class="result-poster">Poster</div>
+                        <div class="result-title">Dune</div>
+                        <div class="result-year">2021</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-section">
+            <div class="card sabnzbd-section">
+                <h3 class="section-title">⬇️ Download Progress</h3>
+                <div class="download-item">
+                    <div class="download-title">Movie.Name.2024.1080p.BluRay.x264</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 65%"></div>
+                    </div>
+                    <div class="download-info">
+                        <span>6.5 GB / 10.0 GB (65%)</span>
+                        <span>ETA: 15m</span>
+                    </div>
+                </div>
+                <div class="download-item">
+                    <div class="download-title">Series.S01E01.1080p.WEB-DL</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 32%"></div>
+                    </div>
+                    <div class="download-info">
+                        <span>1.6 GB / 5.0 GB (32%)</span>
+                        <span>ETA: 25m</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="section-title">📅 Upcoming Releases</h3>
+                <div class="calendar-item">
+                    <div class="calendar-date">May 28, 2026</div>
+                    <div class="calendar-title">Stranger Things</div>
+                    <div class="calendar-episode">S5E1</div>
+                </div>
+                <div class="calendar-item">
+                    <div class="calendar-date">May 30, 2026</div>
+                    <div class="calendar-title">The Bear</div>
+                    <div class="calendar-episode">S4E1</div>
+                </div>
+                <div class="calendar-item">
+                    <div class="calendar-date">June 2, 2026</div>
+                    <div class="calendar-title">House of the Dragon</div>
+                    <div class="calendar-episode">S3E1</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

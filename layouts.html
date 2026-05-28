@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MastARR - Layouts</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #141414;
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        /* Netflix Style Navigation */
+        .netflix-nav {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            padding: 20px 4%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .netflix-logo {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #e50914;
+        }
+
+        .netflix-menu {
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .netflix-menu a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .netflix-menu a:hover {
+            opacity: 0.7;
+        }
+
+        .netflix-menu a.active {
+            font-weight: bold;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 4%;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 50px;
+            font-size: 1.1rem;
+        }
+
+        /* Layout Cards */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+        }
+
+        .layout-card {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 40px 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: #fff;
+            display: block;
+        }
+
+        .layout-card:hover {
+            border-color: #e50914;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .layout-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Netflix Style Navigation -->
+    <nav class="netflix-nav">
+        <div class="netflix-logo">MastARR</div>
+        <div class="netflix-menu">
+            <a href="layouts.html" class="active">🎨 Layouts</a>
+            <a href="settings.html">⚙️ Settings</a>
+            <a href="about.html">ℹ️ About</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h1>Choose Your Layout</h1>
+        <p class="subtitle">Select a visual style for your MastARR experience</p>
+
+        <div class="layout-grid">
+            <a href="modern.html" class="layout-card">
+                <div class="layout-name">Deck</div>
+            </a>
+
+            <a href="frosty.html" class="layout-card">
+                <div class="layout-name">Frosty</div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>
