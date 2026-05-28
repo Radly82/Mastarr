@@ -1,146 +1,300 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Radarr & Sonarr Search</title>
-    <link rel="icon" href="MA.png" type="image/png">
+    <title>MastARR - Modern Dashboard Mockup</title>
     <link rel="stylesheet" href="assets/css/index.css">
 </head>
 <body>
+    <script src="assets/js/index.js"></script>
+    <!-- Netflix Style Navigation -->
+    <nav class="netflix-nav">
+        <div class="netflix-logo-container">
+            <div class="netflix-logo">MastARR</div>
+        </div>
+        <div class="netflix-menu">
+            <a href="layouts.html" class="active">🎨 Layouts</a>
+            <a href="settings.html">⚙️ Settings</a>
+            <a href="about.html">ℹ️ About</a>
+        </div>
+    </nav>
+
     <div class="container">
-        <div class="theme-selector">
-            <button class="theme-button" onclick="toggleMainDropdown()" aria-label="Menu">
-                <span class="dot">•</span>
-                <span class="dot">•</span>
-                <span class="dot">•</span>
-            </button>
-            <div class="theme-dropdown" id="mainDropdown">
-                <div class="menu-item" onclick="toggleSubmenu('themesSubmenu')">
-                    Themes <span class="submenu-arrow">▶</span>
+        <div class="sidebar">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Series</div>
+                    <div class="stat-value" id="totalSeries">Loading...</div>
                 </div>
-                <div class="submenu" id="themesSubmenu">
-                    <div class="theme-option" onclick="changeTheme('dark')" data-theme="dark">Dark Mode</div>
-                    <div class="theme-option" onclick="changeTheme('blue')" data-theme="blue">Blue Theme</div>
-                    <div class="theme-option" onclick="changeTheme('green')" data-theme="green">Green Theme</div>
-                    <div class="theme-option" onclick="changeTheme('80s')" data-theme="80s">80's Theme</div>
-                    <div class="theme-option" onclick="changeTheme('theatre')" data-theme="theatre">Theatre Theme</div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Movies</div>
+                    <div class="stat-value" id="totalMovies">Loading...</div>
                 </div>
-                <div class="menu-item" onclick="toggleSubmenu('layoutSubmenu')">
-                    Layout <span class="submenu-arrow">▶</span>
+                <div class="stat-card">
+                    <div class="stat-label">Active Downloads</div>
+                    <div class="stat-value" id="activeDownloads">Loading...</div>
                 </div>
-                <div class="submenu" id="layoutSubmenu">
-                    <div class="theme-option layout-option" onclick="changeLayout('compact')" data-layout="compact">Compact</div>
-                    <div class="theme-option layout-option" onclick="changeLayout('mastarrflix')" data-layout="mastarrflix">MastarrFlix</div>
+                <div class="stat-card">
+                    <div class="stat-label">Upcoming</div>
+                    <div class="stat-value" id="upcomingCount">Loading...</div>
                 </div>
-                <div class="menu-item" onclick="window.location.href='settings.html'">
-                    Settings
-                </div>
-                <div class="menu-item" onclick="window.location.href='about.html'">
-                    About
-                </div>
-            </div>
-        </div>
-        
-        <img src="MA.png" alt="Logo" class="main-logo" />
-        
-        <div class="search-container">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search for Movies or Series..." onclick="this.focus()" onmousedown="this.focus()" autocomplete="off" />
-                <button id="searchBtn" onclick="searchBoth()">Search</button>
-            </div>
-            <div id="errorContainer"></div>
-        </div>
-        <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
-
-        <div class="sabnzbd-section">
-            <div class="sabnzbd-header">
-                <div class="sabnzbd-tabs">
-                    <div class="sabnzbd-tab active" onclick="switchSabnzbdTab('progress')">Download progress</div>
-                    <div class="sabnzbd-tab" onclick="switchSabnzbdTab('history')">History</div>
-                </div>
-            </div>
-            <div id="sabnzbdProgress">
-                <div class="loading">Loading downloads...</div>
-            </div>
-            <div id="sabnzbdHistory" style="display: none;">
-                <div class="loading">Loading history...</div>
             </div>
         </div>
 
-        <div class="calendar-container series-only">
-            <div class="calendar-section">
-                <div class="calendar-header sonarr-header collapsed" onclick="toggleCalendar('sonarrCalendar')">
-                    <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <img src="https://raw.githubusercontent.com/Sonarr/Sonarr/develop/Logo/Sonarr.svg" alt="Sonarr" class="service-icon" />
-                        <h2>Series Calendar</h2>
+        <div class="main-content">
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search for Movies or Series...">
+                    <button id="searchBtn" class="action-btn primary">Search</button>
+                </div>
+            </div>
+
+            <div class="content-grid">
+                <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">📺 Series Results</h3>
+                </div>
+                <div class="results-grid" id="sonarrRecentSeries">
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">🎬 Movie Results</h3>
+                </div>
+                <div class="results-grid" id="radarrRecentMovies">
+                </div>
+            </div>
+            </div>
+
+            <!-- Search Results Containers -->
+            <div id="sonarrResults" style="display: none;"></div>
+            <div id="radarrResults" style="display: none;"></div>
+
+                <div class="card full-width">
+                    <div class="card-header">
+                        <h3 class="card-title">⬇️ Downloads</h3>
                     </div>
+                    <div class="sabnzbd-tabs">
+                        <div class="sabnzbd-tab active" onclick="switchSabnzbdTab('progress')">Queue</div>
+                        <div class="sabnzbd-tab" onclick="switchSabnzbdTab('history')">History</div>
+                    </div>
+                    <div id="sabnzbdProgress">
+                        <div class="loading">Loading downloads...</div>
+                    </div>
+                    <div id="sabnzbdHistory" class="hidden">
+                        <div class="loading">Loading history...</div>
+                    </div>
+                </div>
+
+            <div class="card">
+                <div class="card-header" onclick="toggleCalendar('sonarrCalendar')">
+                    <h3 class="card-title">📅 Upcoming Releases</h3>
                     <span class="collapse-icon">▼</span>
                 </div>
-                <div id="sonarrCalendar" class="calendar-list collapsed">
+                <div id="sonarrCalendar" class="calendar-list" style="display: none;">
                     <div class="loading">Loading calendar...</div>
                 </div>
-            </div>
-
-            <div class="calendar-section movie-calendar-disabled">
-                <div class="calendar-header radarr-header collapsed" onclick="toggleCalendar('radarrCalendar')">
-                    <div style="display: flex; align-items: center; gap: 0.75rem;">
-                        <img src="https://raw.githubusercontent.com/Radarr/Radarr/develop/Logo/Radarr.svg" alt="Radarr" class="service-icon" />
-                        <h2>Movie Calendar</h2>
-                    </div>
-                    <span class="collapse-icon">▼</span>
-                </div>
-                <div id="radarrCalendar" class="calendar-list collapsed">
-                    <div class="loading">Loading calendar...</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="results-container">
-            <div class="results-header">
-                <h2>Results</h2>
-            </div>
-            <div class="results-tabs">
-                <div class="results-tab active" id="seriesTab" onclick="switchResultsTab('series')">
-                    <img src="https://raw.githubusercontent.com/Sonarr/Sonarr/develop/Logo/Sonarr.svg" alt="Sonarr" class="service-icon-small" />
-                    <span id="seriesCount">Series (0)</span>
-                </div>
-                <div class="results-tab" id="moviesTab" onclick="switchResultsTab('movies')">
-                    <img src="https://raw.githubusercontent.com/Radarr/Radarr/develop/Logo/Radarr.svg" alt="Radarr" class="service-icon-small" />
-                    <span id="moviesCount">Movies (0)</span>
-                </div>
-            </div>
-            <div id="sonarrResults" class="results-list">
-                <div class="no-results">Search for TV shows to see results here</div>
-            </div>
-            <div id="radarrResults" class="results-list" style="display: none;">
-                <div class="no-results">Search for movies to see results here</div>
             </div>
         </div>
     </div>
 
+    <!-- Modal for Cover Art -->
     <div id="coverModal" class="modal">
         <div class="modal-content">
-            <button class="modal-close" onclick="closeModal()">×</button>
-            <img id="modalCover" class="modal-cover" src="" alt="Cover Art" />
-            <h2 id="modalTitle" class="modal-title"></h2>
-            <div id="modalYear" class="modal-year"></div>
-            <div id="modalLibraryStatus" class="modal-library-status"></div>
-            <div id="modalOverview" class="modal-overview"></div>
-            <div class="modal-directory-section">
-                <label for="directorySelect">Download to:</label>
-                <select id="directorySelect" class="directory-select">
-                    <option value="">Loading directories...</option>
-                </select>
+            <div class="modal-header">
+                <h2 style="margin: 0; font-size: 1.2rem;">Details</h2>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
             </div>
-            <button id="modalDownloadBtn" class="download-btn" onclick="modalDownload()">Add to Library</button>
+            <div class="modal-body">
+                <div class="modal-poster">
+                    <img id="modalCover" src="" alt="Poster">
+                </div>
+                <div class="modal-info">
+                    <h3 id="modalTitle" class="modal-title"></h3>
+                    <div id="modalYear" class="modal-year"></div>
+                    <div id="modalRating" class="modal-rating"></div>
+                    <div id="modalMeta" class="modal-meta">
+                        <span id="modalSeasonCount" class="modal-season-count"></span>
+                        <span id="modalStatus" class="modal-status"></span>
+                    </div>
+                    <div id="modalOverview" class="modal-overview"></div>
+                    <div class="modal-actions">
+                        <div id="modalLibraryStatus" class="modal-library-status">Checking...</div>
+                        <select id="directorySelect" class="modal-directory-select">
+                            <option value="">Loading directories...</option>
+                        </select>
+                        <button id="modalDownloadBtn" class="download-btn">Add</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="assets/js/index.js"></script>
+    <script>
+        // Close modal function
+        function closeModal() {
+            const modal = document.getElementById('coverModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('coverModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        let historyInterval = null;
+        let keepHiddenInterval = null;
+        // Initialize currentSabnzbdTab if not defined by index.js
+        if (typeof currentSabnzbdTab === 'undefined') {
+            window.currentSabnzbdTab = 'progress';
+        }
+        
+        // Override switchSabnzbdTab to handle history
+        window.switchSabnzbdTab = function(tab) {
+            const progressDiv = document.getElementById('sabnzbdProgress');
+            const historyDiv = document.getElementById('sabnzbdHistory');
+            const tabs = document.querySelectorAll('.sabnzbd-tab');
+
+            if (tab === 'history') {
+                if (keepHiddenInterval) {
+                    clearInterval(keepHiddenInterval);
+                    keepHiddenInterval = null;
+                }
+                toggleHistory();
+            } else {
+                if (historyInterval) {
+                    clearInterval(historyInterval);
+                    historyInterval = null;
+                }
+                progressDiv.classList.remove('hidden');
+                progressDiv.style.display = 'block';
+                historyDiv.classList.add('hidden');
+                historyDiv.style.display = 'none';
+                tabs[0].classList.add('active');
+                tabs[1].classList.remove('active');
+
+                keepHiddenInterval = setInterval(() => {
+                    if (progressDiv.style.display !== 'block') {
+                        progressDiv.style.display = 'block';
+                        progressDiv.classList.remove('hidden');
+                    }
+                    if (historyDiv.style.display !== 'none') {
+                        historyDiv.style.display = 'none';
+                        historyDiv.classList.add('hidden');
+                    }
+                }, 100);
+            }
+        };
+
+        function toggleHistory() {
+            const progressDiv = document.getElementById('sabnzbdProgress');
+            const historyDiv = document.getElementById('sabnzbdHistory');
+            const historyBtn = document.querySelector('.history-btn');
+            const tabs = document.querySelectorAll('.sabnzbd-tab');
+
+            // Update global tab state to stop polling
+            if (typeof currentSabnzbdTab !== 'undefined') {
+                currentSabnzbdTab = 'history';
+                console.log('modern: Updated currentSabnzbdTab to:', currentSabnzbdTab);
+            }
+
+            progressDiv.classList.add('hidden');
+            historyDiv.classList.remove('hidden');
+            historyDiv.style.display = 'block';
+            historyDiv.style.visibility = 'visible';
+            historyDiv.style.opacity = '1';
+            if (historyBtn) historyBtn.textContent = '📋 View Queue';
+            tabs[0].classList.remove('active');
+            tabs[1].classList.add('active');
+
+            historyDiv.innerHTML = '<div class="loading" style="color: #fff; padding: 20px; text-align: center;">Loading history...</div>';
+            const appSettings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            const sabnzbdUrl = appSettings.sabnzbdUrl;
+            const sabnzbdApiKey = appSettings.sabnzbdApiKey;
+            console.log('appSettings:', appSettings);
+            console.log('sabnzbdUrl:', sabnzbdUrl);
+            console.log('sabnzbdApiKey:', sabnzbdApiKey);
+            if (sabnzbdUrl && sabnzbdApiKey) {
+                const historyUrl = `${sabnzbdUrl}/api?mode=history&limit=100&output=json&apikey=${sabnzbdApiKey}`;
+                console.log('Fetching from:', historyUrl);
+                fetch(historyUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        let history = [];
+                        if (data.history && data.history.slots) {
+                            history = data.history.slots.slice(-10);
+                        }
+                        if (history.length === 0) {
+                            historyDiv.innerHTML = '<div class="no-results" style="color: #fff; padding: 20px; text-align: center;">No history found</div>';
+                            return;
+                        }
+
+                        let html = '<div style="max-height: 280px; overflow-y: auto; display: block; visibility: visible;">';
+                        history.forEach(item => {
+                            const name = item.name || 'Unknown';
+                            const status = item.status || 'Unknown';
+                            const size = item.size || 'Unknown';
+                            const date = item.completed ? new Date(item.completed * 1000).toLocaleDateString() : 'Unknown';
+                            html += `
+                                <div style="background: #2a2a4a; border: 1px solid #3a3a5a; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: block;">
+                                    <div style="color: #fff; font-weight: 600; margin-bottom: 4px;">${name}</div>
+                                    <div style="color: #a0a0b0; font-size: 0.85rem;">
+                                        Status: ${status} | Size: ${size} | Completed: ${date}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        historyDiv.innerHTML = html;
+                        historyDiv.classList.remove('hidden');
+                        historyDiv.setAttribute('style', 'display: block !important; visibility: visible !important; opacity: 1 !important;');
+
+                        historyInterval = setInterval(() => {
+                            if (historyDiv.style.display !== 'block') {
+                                historyDiv.setAttribute('style', 'display: block !important; visibility: visible !important; opacity: 1 !important;');
+                            }
+                            const progressDiv2 = document.getElementById('sabnzbdProgress');
+                            if (progressDiv2 && progressDiv2.style.display !== 'none') {
+                                progressDiv2.style.display = 'none';
+                            }
+                        }, 100);
+
+                        setTimeout(() => {
+                            if (historyInterval) {
+                                clearInterval(historyInterval);
+                                historyInterval = null;
+                            }
+                        }, 5000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to load history:', err);
+                        historyDiv.innerHTML = '<div class="error" style="color: #e50914; padding: 10px;">Failed to load history. Make sure SABnzbd is configured in settings.</div>';
+                    });
+            } else {
+                historyDiv.innerHTML = '<div class="error" style="color: #e50914; padding: 10px;">SABnzbd not configured in settings.</div>';
+            }
+        }
+
+        function toggleCalendar(calendarId) {
+            const calendarDiv = document.getElementById(calendarId);
+            const header = event.currentTarget;
+            const icon = header.querySelector('.collapse-icon');
+
+            if (calendarDiv.style.display === 'none') {
+                calendarDiv.style.display = 'block';
+                icon.classList.remove('collapsed');
+            } else {
+                calendarDiv.style.display = 'none';
+                icon.classList.add('collapsed');
+            }
+        }
+    </script>
 </body>
 </html>
-
-
-
-
