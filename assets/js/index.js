@@ -1856,12 +1856,14 @@
                 tabs[0].classList.add('active');
                 progressContainer.style.display = 'block';
                 historyContainer.style.display = 'none';
+                historyContainer.classList.add('hidden');
                 window.currentSabnzbdTab = 'progress';
                 console.log('currentSabnzbdTab after:', window.currentSabnzbdTab);
             } else if (tab === 'history') {
                 console.log('Switching to HISTORY tab');
                 tabs[1].classList.add('active');
                 progressContainer.style.display = 'none';
+                historyContainer.classList.remove('hidden');
                 historyContainer.style.display = 'block';
                 window.currentSabnzbdTab = 'history';
                 currentPage = 1;
