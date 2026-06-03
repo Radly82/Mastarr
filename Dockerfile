@@ -1,7 +1,9 @@
 FROM nginx:alpine
 
-COPY index.html settings.html about.html layouts.html modern.html frosty.html MA.png /usr/share/nginx/html/
+COPY settings.html about.html layouts.html modern.html frosty.html MA.png /usr/share/nginx/html/
 COPY assets/ /usr/share/nginx/html/assets/
+
+RUN cp /usr/share/nginx/html/modern.html /usr/share/nginx/html/index.html
 
 EXPOSE 80
 
