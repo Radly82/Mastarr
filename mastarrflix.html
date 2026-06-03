@@ -290,6 +290,81 @@
             font-weight: bold;
             z-index: 1000;
         }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .netflix-hero {
+                height: 50vh;
+            }
+
+            .netflix-title {
+                font-size: 2rem;
+            }
+
+            .netflix-row {
+                padding: 15px;
+            }
+
+            .netflix-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+
+            .netflix-card {
+                min-width: 120px;
+            }
+
+            .netflix-poster {
+                height: 160px;
+            }
+
+            .netflix-menu {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .netflix-menu a {
+                font-size: 0.9rem;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .search-btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .netflix-hero {
+                height: 40vh;
+            }
+
+            .netflix-title {
+                font-size: 1.5rem;
+            }
+
+            .netflix-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .netflix-poster {
+                height: 140px;
+            }
+
+            .netflix-card {
+                min-width: 100px;
+            }
+        }
     </style>
 </head>
 <body>

@@ -366,6 +366,75 @@
         .history-btn:hover {
             background: #2ea043;
         }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            .search-input {
+                width: 100%;
+            }
+
+            .search-btn {
+                width: 100%;
+            }
+
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .result-card {
+                padding: 10px;
+            }
+
+            .result-poster {
+                height: 140px;
+            }
+
+            .download-section {
+                padding: 15px;
+            }
+
+            .history-btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .result-poster {
+                height: 180px;
+            }
+
+            .card {
+                padding: 15px;
+            }
+        }
     </style>
 </head>
 <body>
