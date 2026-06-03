@@ -1330,6 +1330,8 @@
             }
         }
 
+        const rootFolderCache = {};
+
         async function showCover(item, type) {
             console.log('Showing cover for item:', item.title);
             console.log('Type:', type);
@@ -1403,38 +1405,41 @@
                 modalCover.style.display = 'none';
             }
 
-            // Fetch and populate root folders based on type
-            try {
-                const config = type === 'sonarr' ? SONARR_CONFIG : RADARR_CONFIG;
-                const response = await fetchWithFallback(config, `/api/v3/rootfolder?apiKey=${config.apiKey}`);
-                if (response.ok) {
-                    const rootFolders = await response.json();
-                    const defaultRootFolder = config.defaultRootFolder || '';
-                    directorySelect.innerHTML = rootFolders.map(folder => 
-                        `<option value="${folder.path}" ${folder.path === defaultRootFolder ? 'selected' : ''}>${folder.path}</option>`
-                    ).join('');
-                } else {
-                    directorySelect.innerHTML = '<option value="">Failed to load directories</option>';
-                }
-            } catch (error) {
-                console.error('Error fetching root folders:', error);
-                directorySelect.innerHTML = '<option value="">Failed to load directories</option>';
-            }
-
             // Set modal download button text based on type
             modalDownloadBtn.textContent = type === 'radarr' ? 'Add Movie' : 'Add Series';
             modalDownloadBtn.className = 'download-btn';
             if (type === 'radarr') {
                 modalDownloadBtn.classList.add('radarr');
             }
-
-            // Show modal
-            modal.style.display = 'block';
-
-            // Attach event listener to download button
             modalDownloadBtn.onclick = modalDownload;
 
-            // Check library status
+            // Show modal immediately — don't wait for async fetches
+            modal.style.display = 'block';
+
+            // Populate directory select from cache or fetch
+            directorySelect.innerHTML = '<option value="">Loading directories...</option>';
+            const serviceConfig = type === 'sonarr' ? SONARR_CONFIG : RADARR_CONFIG;
+            if (rootFolderCache[type]) {
+                const defaultRootFolder = serviceConfig.defaultRootFolder || '';
+                directorySelect.innerHTML = rootFolderCache[type].map(folder =>
+                    `<option value="${folder.path}" ${folder.path === defaultRootFolder ? 'selected' : ''}>${folder.path}</option>`
+                ).join('');
+            } else {
+                fetchWithFallback(serviceConfig, `/api/v3/rootfolder?apiKey=${serviceConfig.apiKey}`)
+                    .then(r => r.json())
+                    .then(rootFolders => {
+                        rootFolderCache[type] = rootFolders;
+                        const defaultRootFolder = serviceConfig.defaultRootFolder || '';
+                        directorySelect.innerHTML = rootFolders.map(folder =>
+                            `<option value="${folder.path}" ${folder.path === defaultRootFolder ? 'selected' : ''}>${folder.path}</option>`
+                        ).join('');
+                    })
+                    .catch(() => {
+                        directorySelect.innerHTML = '<option value="">Failed to load directories</option>';
+                    });
+            }
+
+            // Check library status (non-blocking)
             checkLibraryStatus(item, type, modalLibraryStatus, modalDownloadBtn);
         }
 
@@ -2000,7 +2005,7 @@
                 return `
                 <div class="result-card" onclick="showCover(${JSON.stringify(s).replace(/"/g, '&quot;')}, 'sonarr')">
                     <div class="result-poster">
-                        ${posterUrl ? `<img src="${posterUrl}" alt="${title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="poster-fallback">${posterText}</div>` : posterText}
+                        ${posterUrl ? `<img src="${posterUrl}" alt="${title}" loading="lazy" decoding="async" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="poster-fallback">${posterText}</div>` : posterText}
                     </div>
                     <div class="result-title">${title}</div>
                     <div class="result-year">${s.year || 'N/A'}</div>
@@ -2042,7 +2047,7 @@
                 return `
                 <div class="result-card" onclick="showCover(${JSON.stringify(m).replace(/"/g, '&quot;')}, 'radarr')">
                     <div class="result-poster">
-                        ${posterUrl ? `<img src="${posterUrl}" alt="${title}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="poster-fallback">${posterText}</div>` : posterText}
+                        ${posterUrl ? `<img src="${posterUrl}" alt="${title}" loading="lazy" decoding="async" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"><div class="poster-fallback">${posterText}</div>` : posterText}
                     </div>
                     <div class="result-title">${title}</div>
                     <div class="result-year">${m.year || 'N/A'}</div>
