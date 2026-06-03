@@ -823,7 +823,7 @@
                     .then(data => {
                         let history = [];
                         if (data.history && data.history.slots) {
-                            history = data.history.slots.slice(-10);
+                            history = data.history.slots.slice(0, 10);
                         }
                         if (history.length === 0) {
                             historyDiv.innerHTML = '<div class="no-results" style="color: #fff; padding: 20px; text-align: center;">No history found</div>';
