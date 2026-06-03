@@ -1860,11 +1860,11 @@
                 if (data && data.history && data.history.slots) {
                     allHistoryData = data.history.slots;
                     
-                    // Filter history to only include items from the past 30 days for display
+                    // Filter history to only include items from the past 30 days for display, sorted most recent first
                     historyData = data.history.slots.filter(slot => {
                         const completedTime = new Date(slot.completed * 1000);
                         return completedTime >= thirtyDaysAgo;
-                    });
+                    }).sort((a, b) => b.completed - a.completed);
                     console.log('Filtered history data (past 30 days):', historyData);
                     console.log('Total history items for stats:', allHistoryData.length);
                 } else {
