@@ -57,6 +57,20 @@ async function loadSettings() {
             }
         }
 
+        async function getExistingSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (e) {}
+            try {
+                return JSON.parse(localStorage.getItem('appSettings') || '{}');
+            } catch (e) {
+                return {};
+            }
+        }
+
         async function saveSonarrSettings() {
             const rootFolder = document.getElementById('sonarrDefaultRootFolder').value;
             if (!rootFolder) {
@@ -65,7 +79,7 @@ async function loadSettings() {
             }
             document.getElementById('sonarrSaveWarning').classList.remove('show');
             
-            let settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            let settings = await getExistingSettings();
             
             settings.sonarrUrl = document.getElementById('sonarrUrl').value;
             settings.sonarrTailscaleUrl = document.getElementById('sonarrTailscaleUrl').value;
@@ -84,7 +98,7 @@ async function loadSettings() {
             }
             document.getElementById('radarrSaveWarning').classList.remove('show');
             
-            let settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            let settings = await getExistingSettings();
             
             settings.radarrUrl = document.getElementById('radarrUrl').value;
             settings.radarrTailscaleUrl = document.getElementById('radarrTailscaleUrl').value;
@@ -96,7 +110,7 @@ async function loadSettings() {
         }
 
         async function saveSabnzbdSettings() {
-            let settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+            let settings = await getExistingSettings();
             
             settings.sabnzbdUrl = document.getElementById('sabnzbdUrl').value;
             settings.sabnzbdTailscaleUrl = document.getElementById('sabnzbdTailscaleUrl').value;

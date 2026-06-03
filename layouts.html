@@ -109,6 +109,36 @@
             font-weight: bold;
             margin-bottom: 10px;
         }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .back-button {
+                align-self: center;
+            }
+
+            .layouts-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .layout-card {
+                padding: 20px;
+            }
+
+            .layout-name {
+                font-size: 1.2rem;
+            }
+        }
     </style>
 </head>
 <body>
