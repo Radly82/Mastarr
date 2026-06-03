@@ -461,34 +461,6 @@
             header.classList.toggle('collapsed');
         }
 
-        async function searchSonarr(query) {
-            try {
-                const response = await fetchWithFallback(
-                    SONARR_CONFIG,
-                    `/api/v3/series/lookup?term=${encodeURIComponent(query)}&limit=100&apiKey=${SONARR_CONFIG.apiKey}`
-                );
-                if (!response.ok) throw new Error('Sonarr API error');
-                return await response.json();
-            } catch (error) {
-                console.error('Sonarr search error:', error);
-                throw error;
-            }
-        }
-
-        async function searchRadarr(query) {
-            try {
-                const response = await fetchWithFallback(
-                    RADARR_CONFIG,
-                    `/api/v3/movie/lookup?term=${encodeURIComponent(query)}&limit=100&apiKey=${RADARR_CONFIG.apiKey}`
-                );
-                if (!response.ok) throw new Error('Radarr API error');
-                return await response.json();
-            } catch (error) {
-                console.error('Radarr search error:', error);
-                throw error;
-            }
-        }
-
         // Autocomplete functionality
         let autocompleteTimeout;
         let autocompleteResults = [];
@@ -616,101 +588,18 @@
         async function addSeries(series, customDirectory = null) {
             const btn = document.querySelector(`[data-id="sonarr-${series.tvdbId || series.title}"]`);
             if (!btn) return;
-            
+
             btn.disabled = true;
             btn.textContent = 'Adding...';
 
             try {
-                console.log('Adding series:', series.title);
-                
-                // Check if series already exists in library
-                const existingSeries = await fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`);
-                const existing = existingSeries.find(s => s.tvdbId === series.tvdbId);
-                
-                if (existing) {
-                    console.log('Series already in library:', existing.title);
-                    btn.textContent = 'Already in Library';
-                    btn.classList.add('error');
-                    setTimeout(() => {
-                        btn.disabled = false;
-                        btn.textContent = 'Add Series';
-                        btn.classList.remove('error');
-                    }, 2000);
-                    return;
-                }
-                
-                // First, fetch the root folders and quality profiles to get valid IDs
-                const [rootFolders, qualityProfiles] = await Promise.all([
-                    fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/rootfolder?apiKey=${SONARR_CONFIG.apiKey}`),
-                    fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/qualityprofile?apiKey=${SONARR_CONFIG.apiKey}`)
-                ]);
-
-                console.log('Available root folders:', rootFolders);
-                console.log('Available quality profiles:', qualityProfiles);
-
-                // Use custom directory if provided, otherwise use configured default, otherwise use first available
-                const rootFolder = customDirectory || SONARR_CONFIG.defaultRootFolder || rootFolders[0]?.path || '/tv';
-                const qualityProfileId = qualityProfiles[0]?.id || 1;
-
-                // Use the full series data from lookup and add required fields
-                const seriesData = {
-                    ...series,
-                    qualityProfileId: qualityProfileId,
-                    seasonFolder: true,
-                    monitored: true,
-                    rootFolderPath: rootFolder,
-                    addOptions: {
-                        searchForMissingEpisodes: true
-                    }
-                };
-
-                // Remove fields that shouldn't be sent when adding
-                delete seriesData.id;
-                delete seriesData.seasons;
-
-                console.log('Sending to Sonarr:', seriesData);
-
-                const response = await fetchWithFallback(
-                    SONARR_CONFIG,
-                    `/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(seriesData)
-                    }
-                );
-
-                console.log('Sonarr response status:', response.status);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Sonarr error response:', errorText);
-                    
-                    // Check if error is because series already exists
-                    if (errorText.includes('already been added') || errorText.includes('SeriesExistsValidator')) {
-                        btn.textContent = 'Already in Library';
-                        btn.classList.add('error');
-                        setTimeout(() => {
-                            btn.disabled = false;
-                            btn.textContent = 'Add to Sonarr';
-                            btn.classList.remove('error');
-                        }, 2000);
-                        return;
-                    }
-                    
-                    throw new Error(`Failed to add series: ${response.status} - ${errorText}`);
-                }
-
-                const result = await response.json();
-                console.log('Sonarr success response: Series added successfully');
-
+                await addSeriesToSonarr(series, customDirectory);
                 btn.textContent = 'Added! ✓';
                 btn.classList.add('success');
             } catch (error) {
                 console.error('Add series error:', error);
-                btn.textContent = 'Failed - Try Again';
+                const alreadyExists = error.message === 'Series already in library';
+                btn.textContent = alreadyExists ? 'Already in Library' : 'Failed - Try Again';
                 btn.classList.add('error');
                 setTimeout(() => {
                     btn.disabled = false;
@@ -723,101 +612,18 @@
         async function addMovie(movie, customDirectory = null) {
             const btn = document.querySelector(`[data-id="radarr-${movie.tmdbId || movie.title}"]`);
             if (!btn) return;
-            
+
             btn.disabled = true;
             btn.textContent = 'Adding...';
 
             try {
-                console.log('Adding movie:', movie.title);
-                
-                // Check if movie already exists in library
-                const existingMovies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
-                const existingMovie = existingMovies.find(m => m.tmdbId === movie.tmdbId);
-                
-                if (existingMovie) {
-                    console.log('Movie already in library:', existingMovie.title);
-                    btn.textContent = 'Already in Library';
-                    btn.classList.add('error');
-                    setTimeout(() => {
-                        btn.disabled = false;
-                        btn.textContent = 'Add Movie';
-                        btn.classList.remove('error');
-                    }, 2000);
-                    return;
-                }
-                
-                // First, fetch the root folders and quality profiles to get valid IDs
-                const [rootFolders, qualityProfiles] = await Promise.all([
-                    fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/rootfolder?apiKey=${RADARR_CONFIG.apiKey}`),
-                    fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/qualityprofile?apiKey=${RADARR_CONFIG.apiKey}`)
-                ]);
-
-                console.log('Available root folders:', rootFolders);
-                console.log('Available quality profiles:', qualityProfiles);
-
-                // Use custom directory if provided, otherwise use configured default, otherwise use first available
-                const rootFolder = customDirectory || RADARR_CONFIG.defaultRootFolder || rootFolders[0]?.path || '/movies';
-                const qualityProfileId = qualityProfiles[0]?.id || 1;
-
-                // Use the full movie data from lookup and add required fields
-                const movieData = {
-                    ...movie,
-                    qualityProfileId: qualityProfileId,
-                    monitored: true,
-                    rootFolderPath: rootFolder,
-                    addOptions: {
-                        searchForMovie: true
-                    }
-                };
-
-                // Remove fields that shouldn't be sent when adding
-                delete movieData.id;
-                delete movieData.movieFile;
-                delete movieData.hasFile;
-
-                console.log('Sending to Radarr:', movieData);
-
-                const response = await fetchWithFallback(
-                    RADARR_CONFIG,
-                    `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(movieData)
-                    }
-                );
-
-                console.log('Radarr response status:', response.status);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Radarr error response:', errorText);
-                    
-                    // Check if error is because movie already exists
-                    if (errorText.includes('already been added') || errorText.includes('MovieExistsValidator')) {
-                        btn.textContent = 'Already in Library';
-                        btn.classList.add('error');
-                        setTimeout(() => {
-                            btn.disabled = false;
-                            btn.textContent = 'Add to Radarr';
-                            btn.classList.remove('error');
-                        }, 2000);
-                        return;
-                    }
-                    
-                    throw new Error(`Failed to add movie: ${response.status} - ${errorText}`);
-                }
-
-                const result = await response.json();
-                console.log('Radarr success response: Movie added successfully');
-
+                await addMovieToRadarr(movie, customDirectory);
                 btn.textContent = 'Added! ✓';
                 btn.classList.add('success');
             } catch (error) {
                 console.error('Add movie error:', error);
-                btn.textContent = 'Failed - Try Again';
+                const alreadyExists = error.message === 'Movie already in library';
+                btn.textContent = alreadyExists ? 'Already in Library' : 'Failed - Try Again';
                 btn.classList.add('error');
                 setTimeout(() => {
                     btn.disabled = false;
@@ -1156,25 +962,25 @@
             
             let successCount = 0;
             let failCount = 0;
-            
+
+            // Fetch shared config once before the loop
+            const [existingMovies, rootFolders, qualityProfiles] = await Promise.all([
+                fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`),
+                fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/rootfolder?apiKey=${RADARR_CONFIG.apiKey}`),
+                fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/qualityprofile?apiKey=${RADARR_CONFIG.apiKey}`)
+            ]);
+            const rootFolder = RADARR_CONFIG.defaultRootFolder || rootFolders[0]?.path || '/movies';
+            const qualityProfileId = qualityProfiles[0]?.id || 1;
+
             for (const movie of items) {
                 try {
                     // Check if movie already exists
-                    const existingMovies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
                     const existing = existingMovies.find(m => m.tmdbId === movie.tmdbId);
                     
                     if (existing) {
                         failCount++;
                         continue;
                     }
-                    
-                    const [rootFolders, qualityProfiles] = await Promise.all([
-                        fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/rootfolder?apiKey=${RADARR_CONFIG.apiKey}`),
-                        fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/qualityprofile?apiKey=${RADARR_CONFIG.apiKey}`)
-                    ]);
-                    
-                    const rootFolder = RADARR_CONFIG.defaultRootFolder || rootFolders[0]?.path || '/movies';
-                    const qualityProfileId = qualityProfiles[0]?.id || 1;
                     
                     const movieData = {
                         ...movie,
@@ -1686,7 +1492,7 @@
         function closeModal() {
             const modal = document.getElementById('coverModal');
             if (modal) {
-                modal.classList.remove('active');
+                modal.style.display = 'none';
             }
         }
 
@@ -2248,17 +2054,10 @@
 
             // Fetch total series from Sonarr
             try {
-                const sonarrResponse = await fetch(`${SONARR_CONFIG.url}/api/v3/series`, {
-                    headers: {
-                        'X-Api-Key': SONARR_CONFIG.apiKey
-                    }
-                });
-                if (sonarrResponse.ok) {
-                    const series = await sonarrResponse.json();
-                    const totalSeriesEl = document.getElementById('totalSeries');
-                    if (totalSeriesEl) {
-                        totalSeriesEl.textContent = series.length;
-                    }
+                const series = await fetchJsonWithFallback(SONARR_CONFIG, `/api/v3/series?apiKey=${SONARR_CONFIG.apiKey}`);
+                const totalSeriesEl = document.getElementById('totalSeries');
+                if (totalSeriesEl) {
+                    totalSeriesEl.textContent = series.length;
                 }
             } catch (error) {
                 console.error('Error fetching total series:', error);
@@ -2270,17 +2069,10 @@
 
             // Fetch total movies from Radarr
             try {
-                const radarrResponse = await fetch(`${RADARR_CONFIG.url}/api/v3/movie`, {
-                    headers: {
-                        'X-Api-Key': RADARR_CONFIG.apiKey
-                    }
-                });
-                if (radarrResponse.ok) {
-                    const movies = await radarrResponse.json();
-                    const totalMoviesEl = document.getElementById('totalMovies');
-                    if (totalMoviesEl) {
-                        totalMoviesEl.textContent = movies.length;
-                    }
+                const movies = await fetchJsonWithFallback(RADARR_CONFIG, `/api/v3/movie?apiKey=${RADARR_CONFIG.apiKey}`);
+                const totalMoviesEl = document.getElementById('totalMovies');
+                if (totalMoviesEl) {
+                    totalMoviesEl.textContent = movies.length;
                 }
             } catch (error) {
                 console.error('Error fetching total movies:', error);
@@ -2292,15 +2084,12 @@
 
             // Fetch active downloads from SABnzbd
             try {
-                const sabnzbdResponse = await fetch(`${SABNZBD_CONFIG.url}/api?mode=qstatus&output=json&apikey=${SABNZBD_CONFIG.apiKey}`);
-                if (sabnzbdResponse.ok) {
-                    const data = await sabnzbdResponse.json();
-                    const slots = data && data.queue && data.queue.slots ? data.queue.slots : [];
-                    const activeDownloads = slots.filter(slot => slot.status === 'downloading' || slot.status === 'queued').length;
-                    const activeDownloadsEl = document.getElementById('activeDownloads');
-                    if (activeDownloadsEl) {
-                        activeDownloadsEl.textContent = activeDownloads;
-                    }
+                const data = await fetchJsonWithFallback(SABNZBD_CONFIG, `/api?mode=qstatus&output=json&apikey=${SABNZBD_CONFIG.apiKey}`);
+                const slots = data && data.queue && data.queue.slots ? data.queue.slots : [];
+                const activeDownloads = slots.filter(slot => slot.status === 'downloading' || slot.status === 'queued').length;
+                const activeDownloadsEl = document.getElementById('activeDownloads');
+                if (activeDownloadsEl) {
+                    activeDownloadsEl.textContent = activeDownloads;
                 }
             } catch (error) {
                 console.error('Error fetching active downloads:', error);
@@ -2315,18 +2104,13 @@
                 const today = new Date();
                 const start = today.toISOString().split('T')[0];
                 const end = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-                
-                const calendarResponse = await fetch(`${SONARR_CONFIG.url}/api/v3/calendar?start=${start}&end=${end}&includeUnmonitored=true`, {
-                    headers: {
-                        'X-Api-Key': SONARR_CONFIG.apiKey
-                    }
-                });
-                if (calendarResponse.ok) {
-                    const calendar = await calendarResponse.json();
-                    const upcomingEl = document.getElementById('upcomingCount');
-                    if (upcomingEl) {
-                        upcomingEl.textContent = calendar.length;
-                    }
+                const calendar = await fetchJsonWithFallback(
+                    SONARR_CONFIG,
+                    `/api/v3/calendar?start=${start}&end=${end}&includeUnmonitored=true&apiKey=${SONARR_CONFIG.apiKey}`
+                );
+                const upcomingEl = document.getElementById('upcomingCount');
+                if (upcomingEl) {
+                    upcomingEl.textContent = calendar.length;
                 }
             } catch (error) {
                 console.error('Error fetching upcoming releases:', error);
