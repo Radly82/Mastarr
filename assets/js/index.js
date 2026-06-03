@@ -1860,13 +1860,22 @@
                 if (data && data.history && data.history.slots) {
                     allHistoryData = data.history.slots;
                     
+                    // Debug: log first few items to check completed field format
+                    if (data.history.slots.length > 0) {
+                        console.log('First history slot completed field:', data.history.slots[0].completed, 'type:', typeof data.history.slots[0].completed);
+                        console.log('First slot as date:', new Date(data.history.slots[0].completed * 1000));
+                    }
+                    
                     // Filter history to only include items from the past 30 days for display, sorted most recent first
                     historyData = data.history.slots.filter(slot => {
                         const completedTime = new Date(slot.completed * 1000);
                         return completedTime >= thirtyDaysAgo;
                     }).sort((a, b) => b.completed - a.completed);
-                    console.log('Filtered history data (past 30 days):', historyData);
-                    console.log('Total history items for stats:', allHistoryData.length);
+                    console.log('Filtered history count:', historyData.length, 'of', data.history.slots.length, 'total');
+                    if (historyData.length > 0) {
+                        console.log('Most recent item:', historyData[0].name, new Date(historyData[0].completed * 1000));
+                        console.log('Oldest displayed item:', historyData[historyData.length-1].name, new Date(historyData[historyData.length-1].completed * 1000));
+                    }
                 } else {
                     historyData = [];
                     allHistoryData = [];
