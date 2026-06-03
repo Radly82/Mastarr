@@ -5,4 +5,6 @@ COPY assets/ /usr/share/nginx/html/assets/
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+
+CMD ["nginx"]
