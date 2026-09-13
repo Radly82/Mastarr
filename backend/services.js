@@ -539,19 +539,24 @@ class Services {
             '/api/v3/queue?pageSize=100&includeUnknownSeriesItems=true&includeUnknownMovieItems=true',
           );
           return {
-            queue: (queue.records || []).map((q) => ({
-              id: identifier(q.id),
-              title: q.title,
-              service: name,
-              status: q.trackedDownloadStatus === 'warning' ? 'warning' : q.status,
-              stage: q.trackedDownloadState,
-              progress: q.size ? Math.max(0, Math.min(100, (1 - q.sizeleft / q.size) * 100)) : 0,
-              size: q.size,
-              eta: q.timeleft,
-              messages: (q.statusMessages || []).flatMap((m) => m.messages || []),
-              mediaId: q.seriesId || q.movieId,
-              downloadId: q.downloadId,
-            })),
+            queue: (queue.records || []).map((q) => {
+              const progress = q.size ? Math.max(0, Math.min(100, (1 - q.sizeleft / q.size) * 100)) : 0;
+              const stuck = progress >= 100 && (q.trackedDownloadState === 'importPending' || q.trackedDownloadState === 'importFailed' || (q.statusMessages || []).some((m) => (m.messages || []).some((msg) => /import|eligible/i.test(msg))));
+              return {
+                id: identifier(q.id),
+                title: q.title,
+                service: name,
+                status: stuck ? 'stuck' : q.trackedDownloadStatus === 'warning' ? 'warning' : q.status,
+                stage: q.trackedDownloadState,
+                progress,
+                size: q.size,
+                eta: q.timeleft,
+                messages: (q.statusMessages || []).flatMap((m) => m.messages || []),
+                mediaId: q.seriesId || q.movieId,
+                downloadId: q.downloadId,
+                stuck,
+              };
+            }),
             history: [],
           };
         });
@@ -753,6 +758,12 @@ class Services {
       );
       if (result.status === false || result.error)
         throw fail('The download client could not perform that action.', 502);
+      this.invalidate();
+      return { accepted: true };
+    }
+    if (action === 'remove') {
+      if (!/^\d+$/.test(id)) throw fail('Invalid queue item.');
+      await this.call(name, `/api/v3/queue/${id}?removeFromClient=false&blocklist=false`, 'DELETE');
       this.invalidate();
       return { accepted: true };
     }

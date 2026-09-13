@@ -825,6 +825,22 @@ kbd {
   font-size: 11px;
   margin-top: 10px;
 }
+.queue-stuck-hint {
+  color: var(--text);
+  font-size: 12px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  line-height: 1.5;
+}
+.queue-row.stuck .queue-symbol {
+  color: var(--warn);
+}
+.queue-row.stuck {
+  border-color: var(--warning-border);
+}
 .queue-row.compact {
   padding: 17px 0;
   gap: 10px;

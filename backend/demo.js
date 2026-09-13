@@ -63,6 +63,18 @@ function data() {
           eta: '00:18:40',
           stage: 'downloading',
         },
+        {
+          id: 'demo-3',
+          title: 'Fantastic.Beasts.2022.BDRip.x264-playSD',
+          service: 'radarr',
+          status: 'stuck',
+          progress: 100,
+          size: 8000000000,
+          eta: '00:00:00',
+          stage: 'importPending',
+          stuck: true,
+          messages: ['No files found are eligible for import in /volume1/Downloads/complete/Fantastic.Beasts.2022.BDRip.x264-playSD'],
+        },
       ],
       history: [
         {

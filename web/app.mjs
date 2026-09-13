@@ -647,17 +647,21 @@ async function action(button) {
         await refresh();
       }
     } else if (action === 'queue') {
+      const cmd = button.dataset.command;
+      const verb = cmd === 'remove' ? 'Remove this stuck import from' : cmd === 'pause' ? 'Pause' : cmd === 'resume' ? 'Resume' : cmd === 'retry' ? 'Retry' : 'Change';
       if (
         await confirmAction(
-          `${button.textContent.trim()} download?`,
-          'This changes the download on your server.',
+          `${verb} download?`,
+          cmd === 'remove'
+            ? 'This removes the item from the Sonarr/Radarr queue. The downloaded files on disk are not deleted. You can re-import manually if needed.'
+            : 'This changes the download on your server.',
           'Continue',
         )
       ) {
         await api(`/api/queue/${button.dataset.service}/${button.dataset.id}`, {
-          action: button.dataset.command,
+          action: cmd,
         });
-        toast('Download action submitted.');
+        toast(cmd === 'remove' ? 'Removed from queue.' : 'Download action submitted.');
         await refresh();
       }
     } else if (action === 'bulk' || action === 'bulk-quality') {

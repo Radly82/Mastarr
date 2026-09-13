@@ -36,7 +36,9 @@ export function problems(errors = []) {
 export function queueRow(item, compact = false, editable = false) {
   const progress = Math.max(0, Math.min(100, Number(item.progress) || 0));
   const client = item.client || (item.service === 'sabnzbd' ? item : null);
-  return `<article class="queue-row ${compact ? 'compact' : ''}"><div class="queue-symbol">${icon(item.status === 'warning' ? 'warning' : 'download')}</div><div class="queue-body"><div class="queue-title"><strong>${e(item.title)}</strong><span>${progress.toFixed(0)}<small>%</small></span></div><progress value="${progress}" max="100" aria-label="${e(item.title)} download progress">${progress}%</progress><div class="queue-meta"><span>${e(item.stage || item.status || 'Queued')}</span><span>${compact ? e(item.eta || 'Waiting') : `${e(bytes(item.size))} · ${e(item.eta || 'Waiting')} remaining`}</span></div>${item.messages?.length ? `<div class="queue-warning">${e(item.messages.join(' · '))}</div>` : ''}</div>${!compact && editable ? `<div class="queue-controls">${item.downloadId && item.service !== 'sabnzbd' ? button('review-import', 'Review import', 'library', 'secondary small', `data-service="${e(item.service)}" data-id="${item.id}"`) : ''}${client ? button('queue', item.status?.toLowerCase() === 'paused' ? 'Resume' : 'Pause', item.status?.toLowerCase() === 'paused' ? 'play' : 'pause', 'icon-button', `data-service="sabnzbd" data-id="${e(client.id)}" data-command="${item.status?.toLowerCase() === 'paused' ? 'resume' : 'pause'}"`) : ''}${item.status === 'warning' ? button('queue', 'Retry', 'refresh', 'secondary small', `data-service="${e(item.service)}" data-id="${e(item.id)}" data-command="retry"`) : ''}</div>` : ''}</article>`;
+  const stuck = item.stuck;
+  const symbol = stuck ? 'warning' : item.status === 'warning' ? 'warning' : 'download';
+  return `<article class="queue-row ${compact ? 'compact' : ''} ${stuck ? 'stuck' : ''}"><div class="queue-symbol">${icon(symbol)}</div><div class="queue-body"><div class="queue-title"><strong>${e(item.title)}</strong><span>${progress.toFixed(0)}<small>%</small></span></div><progress value="${progress}" max="100" aria-label="${e(item.title)} download progress">${progress}%</progress><div class="queue-meta"><span>${e(item.stage || item.status || 'Queued')}</span><span>${compact ? e(item.eta || 'Waiting') : `${e(bytes(item.size))} · ${e(item.eta || 'Waiting')} remaining`}</span></div>${item.messages?.length ? `<div class="queue-warning">${e(item.messages.join(' · '))}</div>` : ''}${stuck && !compact ? `<div class="queue-stuck-hint">Download finished but import is stuck. Check the path mapping in ${e(item.service === 'sonarr' ? 'Sonarr' : 'Radarr')} or remove this item from the queue.</div>` : ''}</div>${!compact && editable ? `<div class="queue-controls">${stuck ? button('queue', 'Remove', 'close', 'secondary small', `data-service="${e(item.service)}" data-id="${e(item.id)}" data-command="remove"`) : `${item.downloadId && item.service !== 'sabnzbd' ? button('review-import', 'Review import', 'library', 'secondary small', `data-service="${e(item.service)}" data-id="${item.id}"`) : ''}${client ? button('queue', item.status?.toLowerCase() === 'paused' ? 'Resume' : 'Pause', item.status?.toLowerCase() === 'paused' ? 'play' : 'pause', 'icon-button', `data-service="sabnzbd" data-id="${e(client.id)}" data-command="${item.status?.toLowerCase() === 'paused' ? 'resume' : 'pause'}"`) : ''}${item.status === 'warning' ? button('queue', 'Retry', 'refresh', 'secondary small', `data-service="${e(item.service)}" data-id="${e(item.id)}" data-command="retry"`) : ''}`}</div>` : ''}</article>`;
 }
 export function overview(state) {
   if (!state.library) return skeleton();
@@ -52,6 +54,8 @@ export function overview(state) {
   const hero = recent.find((i) => i.backdrop) || recent[0];
   const used = items.reduce((total, i) => total + (i.size || 0), 0);
   const monitored = items.filter((i) => i.monitored).length;
+  const downloading = queue.filter((q) => !q.stuck);
+  const stuck = queue.filter((q) => q.stuck);
   const stats = [
     ['Your collection', number(items.length), `${movies} films · ${series} series`, 'library'],
     [
@@ -64,12 +68,14 @@ export function overview(state) {
     ],
     [
       'Downloading',
-      number(queue.length),
-      queue.length
+      number(downloading.length),
+      downloading.length
         ? state.activity?.speed
           ? `${bytes(state.activity.speed)}/s combined speed`
           : 'In progress'
-        : 'Nothing downloading right now',
+        : stuck.length
+          ? `${stuck.length} stuck import${stuck.length > 1 ? 's' : ''} need attention`
+          : 'Nothing downloading right now',
       'download',
     ],
     used > 0
