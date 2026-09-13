@@ -1,9 +1,28 @@
-version: '3.8'
-
 services:
   mastarr:
     build: .
+    image: mastarr:14.0.0
     container_name: mastarr
+    user: '${MASTARR_UID:-1000}:${MASTARR_GID:-1000}'
     ports:
-      - "8686:80"
+      - '${MASTARR_BIND:-0.0.0.0}:${MASTARR_PORT:-8686}:8686'
+    environment:
+      CONFIG_DIR: /config
+      SECURE_COOKIES: '${SECURE_COOKIES:-false}'
+      PUBLIC_ORIGIN: '${PUBLIC_ORIGIN:-}'
+      TZ: '${TZ:-UTC}'
+    volumes:
+      - '${MASTARR_CONFIG:-mastarr-config}:/config'
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
     restart: unless-stopped
+    stop_grace_period: 15s
+
+volumes:
+  mastarr-config:

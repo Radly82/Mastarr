@@ -1,6 +1,4 @@
 const { contextBridge, ipcRenderer } = require('electron');
-
-contextBridge.exposeInMainWorld('electronAPI', {
-  saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
-  loadSettings: () => ipcRenderer.invoke('load-settings')
+contextBridge.exposeInMainWorld('mastarrDesktop', {
+  connect: (address) => ipcRenderer.invoke('connect-server', address),
 });

@@ -1,0 +1,8 @@
+**
+!server.js
+!package.json
+!backend/
+!backend/**
+!web/
+!web/**
+!Dockerfile

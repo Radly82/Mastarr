@@ -1,40 +1,21 @@
 <?xml version="1.0"?>
 <Container version="2">
-  <Name>mastarr-docker</Name>
-  <Repository>radly82/mastarr-docker:latest</Repository>
-  <Registry/>
+  <Name>mastarr</Name>
+  <Repository>ghcr.io/radly82/mastarr:14.0.0</Repository>
+  <Registry>https://github.com/Radly82/Mastarr/pkgs/container/mastarr</Registry>
   <Network>bridge</Network>
-  <MyIP/>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/radly82/mastarr</Support>
-  <Project>https://github.com/radly82/mastarr</Project>
-  <ReadMe/>
-  <Overview>
-    MastARR is a modern web interface for searching and managing your media library with Radarr (movies), Sonarr (TV shows), and SABnzbd (downloads).
-    &#13;&#10;
-    &#13;&#10;Features:
-    &#13;&#10;- Dual Search: Search both Radarr (movies) and Sonarr (TV shows) simultaneously
-    &#13;&#10;- Fallback URLs: Configure a Local Network URL and a Tailscale IP URL per service — the app tries local first and falls back to Tailscale automatically
-    &#13;&#10;- SABnzbd Integration: View download progress and history with statistics
-    &#13;&#10;- Calendar View: See upcoming episodes and movie releases
-    &#13;&#10;- Modern UI: Clean, responsive interface with multiple themes
-    &#13;&#10;- Settings Management: Configure URLs and API keys through a built-in settings page
-    &#13;&#10;
-    &#13;&#10;Configuration: All settings (API keys, URLs) are saved in your browser&#39;s localStorage — nothing is stored server-side.
-  </Overview>
-  <Category/>
-  <WebUI>http://[IP]:[PORT:6969]</WebUI>
-  <TemplateURL/>
-  <Icon>https://t4.ftcdn.net/jpg/04/06/95/65/240_F_406956529_FoZrYL2ItP0Pu0um4oX3Amb8xvCenP5s.jpg</Icon>
-  <ExtraParams/>
-  <PostArgs/>
-  <CPUset/>
-  <DateInstalled>1779688552</DateInstalled>
-  <DonateText/>
-  <DonateLink/>
-  <Description>MastARR is a modern web interface for searching and managing your media library with Radarr, Sonarr, and SABnzbd.</Description>
-  <Requires/>
-  <Config Name="Web UI Port" Target="6969" Default="6969" Mode="tcp" Description="Port to access your mastarr page" Type="Port" Display="always" Required="false" Mask="false">6969</Config>
-  <TailscaleStateDir/>
+  <Support>https://github.com/Radly82/Mastarr/issues</Support>
+  <Project>https://github.com/Radly82/Mastarr</Project>
+  <Overview>Mastarr brings movies, series, downloads and release calendars into one private control room. Connect Sonarr, Radarr and SABnzbd once; configuration and encrypted API keys remain on the server. Other devices only sign in. On first run open the container console and read /config/setup-token to claim your administrator account. Use a trusted LAN or VPN, or an HTTPS reverse proxy with PUBLIC_ORIGIN and SECURE_COOKIES configured. Requires existing media engines; does not replace their indexers or import services. The versioned image is available after its release workflow has been published.</Overview>
+  <Category>MediaApp:Video</Category>
+  <WebUI>http://[IP]:[PORT:8686]/</WebUI>
+  <Icon>https://raw.githubusercontent.com/Radly82/Mastarr/main/web/assets/icon-512.png</Icon>
+  <ExtraParams>--user=99:100 --cap-drop=ALL --security-opt=no-new-privileges:true --read-only --tmpfs=/tmp:rw,noexec,nosuid,size=32m</ExtraParams>
+  <Config Name="Web UI Port" Target="8686" Default="8686" Mode="tcp" Type="Port" Display="always" Required="true" Mask="false">8686</Config>
+  <Config Name="Configuration" Target="/config" Default="/mnt/user/appdata/mastarr" Mode="rw" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/mastarr</Config>
+  <Config Name="Secure cookies" Target="SECURE_COOKIES" Default="false" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
+  <Config Name="Public HTTPS origin" Target="PUBLIC_ORIGIN" Default="" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Timezone" Target="TZ" Default="UTC" Type="Variable" Display="advanced" Required="false" Mask="false">UTC</Config>
 </Container>

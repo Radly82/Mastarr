@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; form-action 'none'; base-uri 'none'"
+    />
+    <title>Mastarr — Connect to your server</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="connect.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <div class="mark">M</div>
+      <span class="eyebrow">YOUR MEDIA. TOGETHER.</span>
+      <h1>One server.<br />Every screen.</h1>
+      <p>
+        Enter your Mastarr Docker address. Your library, settings and service keys stay on that
+        server—not on this device.
+      </p>
+      <form>
+        <label for="address">Your Mastarr server</label
+        ><input
+          id="address"
+          type="url"
+          placeholder="http://your-server:8686"
+          required
+          autofocus
+          autocomplete="url"
+        /><button type="submit">Open your control room <span>→</span></button>
+        <p id="status" role="alert"></p>
+      </form>
+      <p class="note">
+        Can't connect? Check the container is running and this device is on your home network or
+        VPN. Use HTTPS for access over the internet.
+      </p>
+    </main>
+  </body>
+</html>

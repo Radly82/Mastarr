@@ -1,0 +1,119 @@
+function data() {
+  const titles = [
+    ['Dune: Part Two', 2024, 'movie', ['Science Fiction', 'Adventure'], 8.5, 'available'],
+    ['Severance', 2025, 'series', ['Drama', 'Mystery'], 8.7, 'available'],
+    ['Interstellar', 2014, 'movie', ['Science Fiction', 'Drama'], 8.7, 'available'],
+    ['The Last of Us', 2025, 'series', ['Drama', 'Adventure'], 8.6, 'partial'],
+    ['The Batman', 2022, 'movie', ['Crime', 'Thriller'], 7.8, 'available'],
+    ['Silo', 2024, 'series', ['Science Fiction', 'Mystery'], 8.1, 'available'],
+    ['Arrival', 2016, 'movie', ['Science Fiction', 'Drama'], 7.9, 'available'],
+    ['The Bear', 2025, 'series', ['Drama', 'Comedy'], 8.5, 'partial'],
+    ['Blade Runner 2049', 2017, 'movie', ['Science Fiction', 'Thriller'], 8.0, 'available'],
+    ['Andor', 2025, 'series', ['Science Fiction', 'Adventure'], 8.6, 'available'],
+    ['Oppenheimer', 2023, 'movie', ['Drama', 'History'], 8.3, 'missing'],
+    ['The Studio', 2025, 'series', ['Comedy'], 8.0, 'missing'],
+  ];
+  const items = titles.map(([title, year, type, genres, rating, status], i) => ({
+    id: i + 1,
+    externalId: 1000 + i,
+    service: type === 'movie' ? 'radarr' : 'sonarr',
+    type,
+    title,
+    year,
+    genres,
+    rating,
+    status,
+    monitored: true,
+    runtime: type === 'movie' ? 166 : 48,
+    quality: i % 3 ? 'WEBDL-1080p' : 'Bluray-2160p',
+    qualityProfileId: 1,
+    added: new Date(Date.now() - i * 7200000).toISOString(),
+    overview:
+      'A story worth making room for. This is sample content in the read-only Mastarr preview. Your connected instance will show the real synopsis, artwork, episodes, files and history from your own media services.',
+    poster: '/assets/poster.svg',
+    backdrop: '/assets/landscape.svg',
+    demoArtwork: true,
+    size: (i + 4) * 1024 ** 3,
+    episodeCount: type === 'series' ? 10 : 1,
+    episodeFileCount: status === 'partial' ? 7 : 10,
+    seasonCount: type === 'series' ? 2 : 0,
+    tags: [],
+  }));
+  return {
+    library: { items, errors: [], updatedAt: new Date().toISOString() },
+    activity: {
+      queue: [
+        {
+          id: 'demo-1',
+          title: 'The Last of Us · S02E07',
+          service: 'sonarr',
+          status: 'downloading',
+          progress: 68,
+          size: 4200000000,
+          eta: '00:04:12',
+          stage: 'downloading',
+        },
+        {
+          id: 'demo-2',
+          title: 'Oppenheimer (2023)',
+          service: 'radarr',
+          status: 'downloading',
+          progress: 34,
+          size: 18000000000,
+          eta: '00:18:40',
+          stage: 'downloading',
+        },
+      ],
+      history: [
+        {
+          id: 'demo-h1',
+          title: 'Dune: Part Two (2024)',
+          service: 'sabnzbd',
+          status: 'Completed',
+          size: '21.6 GB',
+          date: new Date(Date.now() - 3600000).toISOString(),
+        },
+      ],
+      speed: 52000000,
+      paused: false,
+      errors: [],
+    },
+    calendar: {
+      items: [items[1], items[5], items[7], items[9]].map((item, i) => ({
+        ...item,
+        eventId: `demo-${i}`,
+        date: new Date(Date.now() + (i + 1) * 86400000).toISOString(),
+        episodeTitle: [
+          'The next chapter',
+          'Into the unknown',
+          'A new beginning',
+          'The long way home',
+        ][i],
+        seasonNumber: 2,
+        episodeNumber: i + 4,
+        releaseType: 'Episode',
+      })),
+      errors: [],
+    },
+    health: {
+      services: ['sonarr', 'radarr', 'sabnzbd'].map((name, i) => ({
+        name,
+        status: 'online',
+        version: 'Preview',
+        latency: 12 + i * 7,
+        warnings: [],
+        disks: [{ label: 'Media', freeSpace: 3400000000000, totalSpace: 12000000000000 }],
+      })),
+    },
+    events: [
+      {
+        id: 1,
+        time: new Date(Date.now() - 3600000).toISOString(),
+        action: 'import',
+        title: 'Dune: Part Two added to library',
+        user: 'Preview',
+      },
+    ],
+  };
+}
+module.exports = { data };
