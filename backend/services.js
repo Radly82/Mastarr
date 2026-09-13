@@ -125,7 +125,7 @@ function request(
       let size = 0;
       res.on('data', (chunk) => {
         size += chunk.length;
-        if (size > 16 * 1024 * 1024) {
+        if (size > 64 * 1024 * 1024) {
           req.destroy();
           reject(fail('Service response exceeded the size limit.', 502));
         } else chunks.push(chunk);

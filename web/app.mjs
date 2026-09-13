@@ -46,6 +46,7 @@ const state = {
   calendarDays: 30,
   refreshing: false,
   savedFilter: readPreference('mastarr-filter', null),
+  dismissHttpWarning: readPreference('mastarr-dismiss-http-warning', false),
   detail: null,
   detailOptions: null,
   releases: [],
@@ -463,6 +464,12 @@ async function action(button) {
   if (action === 'calendar-range') {
     state.calendarDays = Number(button.dataset.value);
     return refresh();
+  }
+  if (action === 'dismiss-http-warning') {
+    state.dismissHttpWarning = true;
+    savePreference('mastarr-dismiss-http-warning', true);
+    renderMain();
+    return;
   }
   if (action === 'account-menu') {
     const confirmed = await confirmAction(
