@@ -160,6 +160,10 @@ test('all main screens fit phone and tablet viewports; modal closes with Escape'
   await expect(page.locator('#sidebar')).toBeInViewport();
 });
 test('first-run pairing creates the administrator and opens shared setup', async ({ page }) => {
+  const consoleErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
   await app.close();
   const configDir = path.join(directory, 'unclaimed');
   app = await createApp({ configDir, transport: fixture.transport });
@@ -174,6 +178,7 @@ test('first-run pairing creates the administrator and opens shared setup', async
   await expect(page.locator('.connection-form')).toHaveCount(3);
   expect(app.store.hasUsers()).toBe(true);
   expect(fs.existsSync(path.join(configDir, 'setup-token'))).toBe(false);
+  expect(consoleErrors).toEqual([]);
 });
 test('connection saves and loaded defaults remain server-side', async ({ page }) => {
   await login(page);
@@ -185,12 +190,26 @@ test('connection saves and loaded defaults remain server-side', async ({ page })
   await form.getByRole('button', { name: 'Save connection' }).click();
   await expect(form.locator('.form-result')).toContainText('saved securely');
   await expect(form.locator('[name="apiKey"]')).toHaveValue('');
+  await expect(form.getByText('Saved securely', { exact: true })).toBeVisible();
+  await expect(form.getByLabel('Enable Radarr')).toBeChecked();
+  await page.reload();
+  await expect(form.getByText('Saved securely', { exact: true })).toBeVisible();
+  await expect(form.getByLabel('Enable Radarr')).toBeChecked();
   await form.getByRole('button', { name: 'Load options' }).click();
   await form.locator('[name="defaultQualityProfileId"]').selectOption('3');
   await form.getByRole('button', { name: 'Save connection' }).click();
   await expect(form.locator('.form-result')).toContainText('saved securely');
+  await form.getByLabel('Enable Radarr').uncheck();
+  await form.getByRole('button', { name: 'Save connection' }).click();
+  await page.reload();
+  await expect(form.getByLabel('Enable Radarr')).not.toBeChecked();
+  await form.getByLabel('Enable Radarr').check();
+  await form.getByRole('button', { name: 'Save connection' }).click();
+  await page.reload();
+  await expect(form.getByLabel('Enable Radarr')).toBeChecked();
   expect(app.store.services().radarr.defaultQualityProfileId).toBe(3);
   expect(app.store.services().radarr.apiKey).toBe('test-only-replacement-key');
+  expect(app.store.services().radarr.enabled).toBe(true);
 });
 test('bulk monitoring and import review submit the selected items only', async ({ page }) => {
   await login(page);
@@ -256,7 +275,7 @@ test('cinema shell replaces the old offline cache without caching API responses'
     const page = await context.newPage();
     await page.goto(origin + '/healthz');
     await page.evaluate(async () => {
-      const old = await caches.open('mastarr-shell-v2.0.1');
+      const old = await caches.open('mastarr-shell-v2.0.2');
       await old.put('/styles.css', new Response('old palette'));
     });
     await page.goto(origin);
@@ -265,9 +284,9 @@ test('cinema shell replaces the old offline cache without caching API responses'
     });
     await expect
       .poll(() => page.evaluate(() => caches.keys()))
-      .toEqual(['mastarr-shell-v2.0.2']);
+      .toEqual(['mastarr-shell-v2.0.3']);
     const cached = await page.evaluate(async () => {
-      const cache = await caches.open('mastarr-shell-v2.0.2');
+      const cache = await caches.open('mastarr-shell-v2.0.3');
       return {
         css: await (await cache.match('/styles.css')).text(),
         keys: (await cache.keys()).map((r) => new URL(r.url).pathname),

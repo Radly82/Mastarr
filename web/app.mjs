@@ -103,7 +103,7 @@ theme();
 function renderAuth(error = '') {
   clearTimeout(pollTimer);
   const setup = state.session?.setupRequired;
-  root.innerHTML = `<main id="main" class="auth-page"><section class="auth-art"><img src="/assets/landscape.svg" alt="" class="auth-landscape"><a class="brand" href="/"><img src="/assets/mark.svg" alt="" width="38" height="38"><span>mastarr<span class="brand-dot">.</span></span></a><div class="auth-manifesto"><span class="eyebrow">YOUR MEDIA. YOUR SPACE.</span><h1>All your stories.<br>One beautiful<br><span>home.</span></h1><p>Movies, series, and everything in between.<br>Finally together. Entirely yours.</p><div class="auth-features"><span>${icon('shield')}Private by design</span><span>${icon('library')}One shared library</span></div></div><div class="auth-art-footer">SELF-HOSTED <span>·</span> NO CLOUD REQUIRED</div></section><section class="auth-form-wrap"><div class="auth-mobile-brand"><img src="/assets/mark.svg" alt="Mastarr" width="42" height="42"></div><div class="auth-form-content"><span class="eyebrow">${setup ? 'A FRESH START' : 'YOUR CONTROL ROOM IS WAITING'}</span><h2>${setup ? 'Make yourself at home.' : 'Good to see you again.'}</h2><p>${setup ? 'Claim your server, then connect your services. You only need to do this once.' : 'Sign in to your private media collection.'}</p><form data-form="auth" class="auth-form">${setup ? `<label>Pairing code<input name="token" type="text" autocomplete="off" required placeholder="6-character code" pattern="[A-Za-z0-9]{6}" maxlength="6" style="text-transform:uppercase;letter-spacing:0.15em;font-size:1.25rem;text-align:center"></label><details class="pairing-help"><summary>Where do I find my pairing code?</summary><p><strong>In Unraid:</strong> Click the Mastarr container icon → <strong>Logs</strong>. Your code is printed at the top of the log.</p><p><strong>Or in a terminal:</strong></p><code>docker exec mastarr cat /config/setup-token</code><p>This one-time code protects your unclaimed server. It is removed after setup.</p></details>` : ''}<label>Username<input name="username" autocomplete="username" pattern="[a-zA-Z0-9_.-]{3,32}" minlength="3" maxlength="32" required placeholder="${setup ? 'Choose a username' : 'Your username'}"></label><label>Password<input name="password" type="password" autocomplete="${setup ? 'new-password' : 'current-password'}" minlength="12" maxlength="256" required placeholder="${setup ? 'At least 12 characters' : 'Your password'}"></label><div class="form-result error" role="alert">${e(error)}</div><button class="button primary auth-submit" type="submit">${setup ? 'Create your control room' : 'Enter your control room'}${icon('arrow')}</button></form><div class="auth-note">${icon('shield')}Your account belongs to this server.<br>No third-party account required.</div></div><span class="auth-footer">Mastarr ${e(state.session?.version || '14.0.0')} <span>·</span> Your media, together.</span></section></main>`;
+  root.innerHTML = `<main id="main" class="auth-page"><section class="auth-art"><img src="/assets/landscape.svg" alt="" class="auth-landscape"><a class="brand" href="/"><img src="/assets/mark.svg" alt="" width="38" height="38"><span>mastarr<span class="brand-dot">.</span></span></a><div class="auth-manifesto"><span class="eyebrow">YOUR MEDIA. YOUR SPACE.</span><h1>All your stories.<br>One beautiful<br><span>home.</span></h1><p>Movies, series, and everything in between.<br>Finally together. Entirely yours.</p><div class="auth-features"><span>${icon('shield')}Private by design</span><span>${icon('library')}One shared library</span></div></div><div class="auth-art-footer">SELF-HOSTED <span>·</span> NO CLOUD REQUIRED</div></section><section class="auth-form-wrap"><div class="auth-mobile-brand"><img src="/assets/mark.svg" alt="Mastarr" width="42" height="42"></div><div class="auth-form-content"><span class="eyebrow">${setup ? 'A FRESH START' : 'YOUR CONTROL ROOM IS WAITING'}</span><h2>${setup ? 'Make yourself at home.' : 'Good to see you again.'}</h2><p>${setup ? 'Claim your server, then connect your services. You only need to do this once.' : 'Sign in to your private media collection.'}</p><form data-form="auth" class="auth-form">${setup ? `<label>Pairing code<input name="token" type="text" autocomplete="off" required placeholder="6-character code" pattern="[A-Za-z0-9]{6}" maxlength="6" class="pairing-code-input"></label><details class="pairing-help"><summary>Where do I find my pairing code?</summary><p><strong>In Unraid:</strong> Click the Mastarr container icon → <strong>Logs</strong>. Your code is printed at the top of the log.</p><p><strong>Or in a terminal:</strong></p><code>docker exec mastarr cat /config/setup-token</code><p>This one-time code protects your unclaimed server. It is removed after setup.</p></details>` : ''}<label>Username<input name="username" autocomplete="username" pattern="[A-Za-z0-9_.\\-]{3,32}" minlength="3" maxlength="32" required placeholder="${setup ? 'Choose a username' : 'Your username'}"></label><label>Password<input name="password" type="password" autocomplete="${setup ? 'new-password' : 'current-password'}" minlength="12" maxlength="256" required placeholder="${setup ? 'At least 12 characters' : 'Your password'}"></label><div class="form-result error" role="alert">${e(error)}</div><button class="button primary auth-submit" type="submit">${setup ? 'Create your control room' : 'Enter your control room'}${icon('arrow')}</button></form><div class="auth-note">${icon('shield')}Your account belongs to this server.<br>No third-party account required.</div></div><span class="auth-footer">Mastarr ${e(state.session?.version || '14.0.0')} <span>·</span> Your media, together.</span></section></main>`;
 }
 function renderShell() {
   root.innerHTML = `<div class="app-shell"><aside class="sidebar" id="sidebar"><a href="#overview" class="brand"><img src="/assets/mark.svg" alt="" width="34" height="34"><span>mastarr<span class="brand-dot">.</span></span></a><span class="nav-label">YOUR WORKSPACE</span><nav aria-label="Main navigation">${views
@@ -335,8 +335,9 @@ async function formSubmit(form) {
     } else if (kind === 'service') {
       const name = form.dataset.service;
       state.settings = await api('/api/settings', { services: { [name]: serviceInput(form) } });
-      form.querySelector('[name="apiKey"]').value = '';
-      formStatus(form, 'Connection saved securely on your server.');
+      renderMain();
+      const savedForm = document.querySelector(`form[data-service="${name}"]`);
+      formStatus(savedForm, 'Connection saved securely. The API key field clears by design.');
       toast('Connection saved. Every device now uses this configuration.');
       await refresh(true);
     } else if (kind === 'media') {
@@ -516,12 +517,21 @@ async function action(button) {
     } else if (action === 'load-options') {
       const form = button.closest('form');
       const name = form.dataset.service;
-      const options = await api(`/api/options/${name}`);
       const currentRoot = form.querySelector('[name="defaultRootFolder"]').value;
       const currentQuality = Number(form.querySelector('[name="defaultQualityProfileId"]').value);
+      formStatus(form, 'Saving the connection and loading options…');
+      state.settings = await api('/api/settings', { services: { [name]: serviceInput(form) } });
+      form.querySelector('[name="apiKey"]').value = '';
+      let options;
+      try {
+        options = await api(`/api/options/${name}`);
+      } catch (error) {
+        formStatus(form, `Connection saved, but ${error.message}`, true);
+        return;
+      }
       document.getElementById(`defaults-${name}`).innerHTML =
         `<label>Default root folder<select name="defaultRootFolder">${options.roots.map((r) => `<option value="${e(r.path)}" ${r.path === currentRoot ? 'selected' : ''}>${e(r.path)} · ${bytes(r.freeSpace)} free</option>`).join('')}</select></label><label>Default quality profile<select name="defaultQualityProfileId">${options.profiles.map((p) => `<option value="${p.id}" ${p.id === currentQuality ? 'selected' : ''}>${e(p.name)}</option>`).join('')}</select></label>`;
-      formStatus(form, 'Options loaded. Save the connection to keep your defaults.');
+      formStatus(form, 'Connection saved and options loaded.');
     } else if (action === 'media-command') {
       const item = state.detail;
       if (

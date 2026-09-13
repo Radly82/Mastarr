@@ -4,7 +4,7 @@ FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6ee
 LABEL org.opencontainers.image.title="Mastarr" \
       org.opencontainers.image.description="Your private movie and series control room" \
       org.opencontainers.image.source="https://github.com/Radly82/Mastarr" \
-      org.opencontainers.image.version="2.0.2"
+      org.opencontainers.image.version="2.0.3"
 
 RUN apk upgrade --no-cache && apk add --no-cache libstdc++ ca-certificates su-exec \
     && addgroup -g 1000 node && adduser -D -H -u 1000 -G node node \

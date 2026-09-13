@@ -2651,6 +2651,12 @@ dialog::backdrop {
   font-size: 12px;
   background: var(--panel);
 }
+.auth-form .pairing-code-input {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 1.25rem;
+  text-align: center;
+}
 .auth-submit {
   margin-top: 25px;
   width: 100%;
