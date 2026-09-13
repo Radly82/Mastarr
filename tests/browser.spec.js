@@ -200,11 +200,11 @@ test('connection saves and loaded defaults remain server-side', async ({ page })
   await form.getByRole('button', { name: 'Save connection' }).click();
   await expect(form.locator('.form-result')).toContainText('saved securely');
   await form.getByLabel('Enable Radarr').uncheck();
-  await form.getByRole('button', { name: 'Save connection' }).click();
+  await expect(form.locator('.form-result')).toContainText('disabled');
   await page.reload();
   await expect(form.getByLabel('Enable Radarr')).not.toBeChecked();
   await form.getByLabel('Enable Radarr').check();
-  await form.getByRole('button', { name: 'Save connection' }).click();
+  await expect(form.locator('.form-result')).toContainText('enabled');
   await page.reload();
   await expect(form.getByLabel('Enable Radarr')).toBeChecked();
   expect(app.store.services().radarr.defaultQualityProfileId).toBe(3);
@@ -275,7 +275,7 @@ test('cinema shell replaces the old offline cache without caching API responses'
     const page = await context.newPage();
     await page.goto(origin + '/healthz');
     await page.evaluate(async () => {
-      const old = await caches.open('mastarr-shell-v2.0.2');
+      const old = await caches.open('mastarr-shell-v2.0.3');
       await old.put('/styles.css', new Response('old palette'));
     });
     await page.goto(origin);
@@ -284,9 +284,9 @@ test('cinema shell replaces the old offline cache without caching API responses'
     });
     await expect
       .poll(() => page.evaluate(() => caches.keys()))
-      .toEqual(['mastarr-shell-v2.0.3']);
+      .toEqual(['mastarr-shell-v2.0.4']);
     const cached = await page.evaluate(async () => {
-      const cache = await caches.open('mastarr-shell-v2.0.3');
+      const cache = await caches.open('mastarr-shell-v2.0.4');
       return {
         css: await (await cache.match('/styles.css')).text(),
         keys: (await cache.keys()).map((r) => new URL(r.url).pathname),

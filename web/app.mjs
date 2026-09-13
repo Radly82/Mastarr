@@ -718,6 +718,35 @@ document.addEventListener('submit', (event) => {
 });
 document.addEventListener('change', async (event) => {
   const target = event.target;
+  if (target.name === 'enabled' && target.closest('form[data-form="service"]')) {
+    const form = target.closest('form');
+    const name = form.dataset.service;
+    const hasKey = form.querySelector('[name="apiKey"]').value.trim() || state.settings?.services?.[name]?.hasApiKey;
+    const hasUrl = form.querySelector('[name="url"]').value.trim();
+    if (target.checked && !hasUrl) {
+      target.checked = false;
+      formStatus(form, 'Enter the service URL before enabling.', true);
+      return;
+    }
+    if (target.checked && !hasKey) {
+      target.checked = false;
+      formStatus(form, 'Enter the API key before enabling.', true);
+      return;
+    }
+    formStatus(form, 'Saving…');
+    try {
+      state.settings = await api('/api/settings', { services: { [name]: serviceInput(form) } });
+      renderMain();
+      const savedForm = document.querySelector(`form[data-service="${name}"]`);
+      formStatus(savedForm, target.checked ? 'Connection enabled and saved.' : 'Connection disabled and saved.');
+      toast(`${name} ${target.checked ? 'enabled' : 'disabled'}.`);
+      await refresh(true);
+    } catch (error) {
+      target.checked = !target.checked;
+      formStatus(form, error.message, true);
+    }
+    return;
+  }
   if (target.dataset.filter) {
     state[target.dataset.filter] = target.value;
     state.limit = 48;
