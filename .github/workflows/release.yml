@@ -49,6 +49,8 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: radly82/mastarr:${{ needs.verify.outputs.version }}
+          tags: |
+            radly82/mastarr:${{ needs.verify.outputs.version }}
+            radly82/mastarr:latest
           provenance: true
           sbom: true
