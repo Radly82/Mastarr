@@ -2,6 +2,8 @@
 
 **Your media, together.** A private, self-hosted control room for movies, series, downloads and release calendars. Version 14.0.0.
 
+**For coding assistants and contributors:** start with [AGENTS.md](AGENTS.md) for the architecture, file map, request flows, security rules, development commands and release workflow.
+
 Mastarr runs once on your server. Connect Sonarr, Radarr and SABnzbd once; every browser and desktop client uses that shared configuration. Service API keys are encrypted on the server and are never returned to client devices. Devices only need the Mastarr address and an account.
 
 ## What you can do
@@ -121,7 +123,7 @@ The Settings page can import a legacy settings JSON file. Check the imported con
 
 ### Public-history privacy cleanup
 
-The identified personal email addresses, developer machine paths and private-network details were removed from the published main history, and old installer binaries were removed from that history. The original local repository is retained separately as an offline backup and must not be pushed back to this repository.
+The identified personal email addresses, developer machine paths and private-network details were removed from the published main history, and old installer binaries were removed from that history. The original local checkout was subsequently deleted at the owner's request; do not assume that backup still exists or reintroduce pre-cleanup history from another copy.
 
 GitHub may retain old commits by their original IDs after a history rewrite. The repository owner must ask GitHub Support to remove retained/cached references and review any remaining links. A force-push cannot erase third-party clones or previously downloaded files. Rotate any credential known to have been exposed, even if its source was subsequently removed.
 

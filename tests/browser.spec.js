@@ -143,6 +143,7 @@ test('all main screens fit phone and tablet viewports; modal closes with Escape'
         viewport: innerWidth,
         document: document.documentElement.scrollWidth,
       }));
+      expect(size.viewport).toBe(width);
       expect(size.document, `${route} at ${width}px`).toBeLessThanOrEqual(size.viewport + 1);
     }
   }
@@ -210,6 +211,73 @@ test('bulk monitoring and import review submit the selected items only', async (
     .click();
   await expect(page.locator('#detail-dialog')).not.toBeVisible();
   expect(fixture.calls.filter((c) => c.body?.name === 'ManualImport')).toHaveLength(1);
+});
+test('cinema palette keeps amber actions and violet navigation in both themes', async ({
+  page,
+}, testInfo) => {
+  await login(page);
+  for (const [theme, navigation] of [
+    ['dark', 'rgb(183, 160, 255)'],
+    ['light', 'rgb(104, 70, 166)'],
+  ]) {
+    if (theme === 'light')
+      await page.getByRole('button', { name: 'Toggle light and dark theme' }).click();
+    await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute(
+      'content',
+      theme === 'dark' ? '#101018' : '#f5f2f8',
+    );
+    await expect(page.locator('.hero .primary')).toHaveCSS(
+      'background-color',
+      'rgb(255, 192, 109)',
+    );
+    await expect(page.locator('.hero .primary')).toHaveCSS('color', 'rgb(42, 27, 11)');
+    await expect(page.locator('[data-nav="overview"]')).toHaveCSS('color', navigation);
+    await page.screenshot({
+      path: testInfo.outputPath(`cinema-${theme}.png`),
+      fullPage: true,
+      animations: 'disabled',
+    });
+  }
+  await page.getByRole('button', { name: 'Toggle light and dark theme' }).click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => innerWidth)).toBe(390);
+  await expect(page.locator('#sidebar')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, -242, 0)');
+  await page.screenshot({
+    path: testInfo.outputPath('cinema-mobile.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+});
+test('cinema shell replaces the old offline cache without caching API responses', async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ serviceWorkers: 'allow' });
+  try {
+    const page = await context.newPage();
+    await page.goto(origin + '/healthz');
+    await page.evaluate(async () => {
+      const old = await caches.open('mastarr-shell-v14.0.0');
+      await old.put('/styles.css', new Response('old palette'));
+    });
+    await page.goto(origin);
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+    });
+    await expect
+      .poll(() => page.evaluate(() => caches.keys()))
+      .toEqual(['mastarr-shell-v14.0.0-cinema']);
+    const cached = await page.evaluate(async () => {
+      const cache = await caches.open('mastarr-shell-v14.0.0-cinema');
+      return {
+        css: await (await cache.match('/styles.css')).text(),
+        keys: (await cache.keys()).map((r) => new URL(r.url).pathname),
+      };
+    });
+    expect(cached.css).toContain('--action-bg: #ffc06d');
+    expect(cached.keys.some((key) => key.startsWith('/api/'))).toBe(false);
+  } finally {
+    await context.close();
+  }
 });
 test('key screens meet automated WCAG accessibility checks in both themes', async ({ page }) => {
   await login(page);

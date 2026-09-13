@@ -93,6 +93,11 @@ async function api(route, body, options = {}) {
 function theme() {
   const value = readPreference('mastarr-theme', 'dark');
   document.documentElement.dataset.theme = value === 'light' ? 'light' : 'dark';
+  const chromeColor = document.querySelector('meta[name="theme-color"]');
+  if (chromeColor)
+    chromeColor.content = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bg')
+      .trim();
 }
 theme();
 function renderAuth(error = '') {

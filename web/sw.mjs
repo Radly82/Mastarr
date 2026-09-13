@@ -1,4 +1,4 @@
-const CACHE = 'mastarr-shell-v14.0.0';
+const CACHE = 'mastarr-shell-v14.0.0-cinema';
 const ASSETS = [
   '/',
   '/app.mjs',
@@ -13,7 +13,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((cache) => cache.addAll(ASSETS))
+      .then((cache) => cache.addAll(ASSETS.map((asset) => new Request(asset, { cache: 'reload' }))))
       .then(() => self.skipWaiting()),
   );
 });
