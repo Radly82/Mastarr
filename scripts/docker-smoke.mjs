@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
-const image = process.argv[2] || 'mastarr:2.0.0';
+const image = process.argv[2] || 'mastarr:2.0.1';
 const name = `mastarr-test-${randomUUID().slice(0, 8)}`;
 const volume = `${name}-config`;
 const docker = (...args) =>

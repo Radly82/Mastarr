@@ -6,6 +6,13 @@ const { DatabaseSync } = require('node:sqlite');
 const scrypt = promisify(crypto.scrypt);
 const hash = (value) => crypto.createHash('sha256').update(value).digest('hex');
 const token = () => crypto.randomBytes(32).toString('base64url');
+const pairingCode = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  const bytes = crypto.randomBytes(6);
+  for (let i = 0; i < 6; i++) code += chars[bytes[i] % chars.length];
+  return code;
+};
 
 class Store {
   constructor(directory) {
@@ -31,7 +38,7 @@ class Store {
       PRAGMA user_version=1;`);
     this.setupPath = path.join(directory, 'setup-token');
     if (!this.hasUsers() && !fs.existsSync(this.setupPath))
-      fs.writeFileSync(this.setupPath, token(), { mode: 0o600, flag: 'wx' });
+      fs.writeFileSync(this.setupPath, pairingCode(), { mode: 0o600, flag: 'wx' });
   }
   hasUsers() {
     return this.db.prepare('SELECT COUNT(*) AS count FROM users').get().count > 0;

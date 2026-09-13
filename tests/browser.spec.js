@@ -167,7 +167,7 @@ test('first-run pairing creates the administrator and opens shared setup', async
   origin = `http://127.0.0.1:${app.server.address().port}`;
   const token = fs.readFileSync(path.join(configDir, 'setup-token'), 'utf8');
   await page.goto(origin);
-  await page.getByLabel('Server pairing token').fill(token);
+  await page.getByLabel('Pairing code').fill(token);
   await page.getByLabel('Username', { exact: true }).fill('new-admin');
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Create your control room' }).click();
@@ -256,7 +256,7 @@ test('cinema shell replaces the old offline cache without caching API responses'
     const page = await context.newPage();
     await page.goto(origin + '/healthz');
     await page.evaluate(async () => {
-      const old = await caches.open('mastarr-shell-v14.0.0-cinema');
+      const old = await caches.open('mastarr-shell-v2.0.0');
       await old.put('/styles.css', new Response('old palette'));
     });
     await page.goto(origin);
@@ -265,9 +265,9 @@ test('cinema shell replaces the old offline cache without caching API responses'
     });
     await expect
       .poll(() => page.evaluate(() => caches.keys()))
-      .toEqual(['mastarr-shell-v2.0.0']);
+      .toEqual(['mastarr-shell-v2.0.1']);
     const cached = await page.evaluate(async () => {
-      const cache = await caches.open('mastarr-shell-v2.0.0');
+      const cache = await caches.open('mastarr-shell-v2.0.1');
       return {
         css: await (await cache.match('/styles.css')).text(),
         keys: (await cache.keys()).map((r) => new URL(r.url).pathname),

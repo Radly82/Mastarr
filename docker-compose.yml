@@ -1,7 +1,7 @@
 services:
   mastarr:
     build: .
-    image: mastarr:2.0.0
+    image: mastarr:2.0.1
     container_name: mastarr
     ports:
       - '${MASTARR_BIND:-0.0.0.0}:${MASTARR_PORT:-8686}:8686'

@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Store, hash } = require('./backend/store');
 const { Services, validateSettings, object, fail, names } = require('./backend/services');
-const VERSION = '2.0.0';
+const VERSION = '2.0.1';
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
@@ -531,10 +531,23 @@ if (require.main === module) {
     .then((app) => {
       app.server.listen(Number(process.env.PORT || 8686), process.env.HOST || '0.0.0.0', () => {
         console.log(`Mastarr ${VERSION} is ready on port ${app.server.address().port}.`);
-        if (!app.store.hasUsers())
-          console.log(
-            'First run: retrieve the setup-token file from the persistent configuration directory to pair your administrator account.',
-          );
+        if (!app.store.hasUsers()) {
+          let code = '';
+          try { code = fs.readFileSync(app.store.setupPath, 'utf8').trim(); } catch {}
+          if (code) {
+            console.log('');
+            console.log('═══════════════════════════════════════════════════════');
+            console.log('  FIRST-RUN SETUP');
+            console.log('');
+            console.log(`  Your pairing code is:  ${code}`);
+            console.log('');
+            console.log('  1. Open Mastarr in your browser.');
+            console.log('  2. Enter this code on the setup screen.');
+            console.log('  3. Choose your admin username and password.');
+            console.log('═══════════════════════════════════════════════════════');
+            console.log('');
+          }
+        }
       });
       let stopping = false;
       for (const signal of ['SIGINT', 'SIGTERM'])

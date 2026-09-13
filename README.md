@@ -1,6 +1,6 @@
 # Mastarr
 
-**Your media, together.** A private, self-hosted control room for movies, series, downloads and release calendars. Version 2.0.0.
+**Your media, together.** A private, self-hosted control room for movies, series, downloads and release calendars. Version 2.0.1.
 
 **For coding assistants and contributors:** start with [AGENTS.md](AGENTS.md) for the architecture, file map, request flows, security rules, development commands and release workflow.
 
@@ -53,18 +53,18 @@ The image defaults to UID/GID 1000:1000. Standard Unraid installations commonly 
 
 ### Use the Unraid template
 
-`mastarr.xml` defines the appdata mount, port 8686 and an unprivileged runtime. Its versioned Docker Hub image is produced by the **Release Docker** workflow. Until that workflow has successfully published the image, build locally and use `mastarr:2.0.0` as the repository/image instead. The Docker Hub repository must be public if anonymous pulls are desired.
+`mastarr.xml` defines the appdata mount, port 8686 and an unprivileged runtime. Its versioned Docker Hub image is produced by the **Release Docker** workflow. Until that workflow has successfully published the image, build locally and use `mastarr:2.0.1` as the repository/image instead. The Docker Hub repository must be public if anonymous pulls are desired.
 
 ### First-run setup
 
 1. Open Mastarr's page.
-2. In the Unraid container console, run `cat /config/setup-token`. Alternatively, run:
+2. Click the Mastarr container icon in Unraid → **Logs**. Your 6-character pairing code is printed at the top of the log. Alternatively, run:
 
    ```sh
    docker exec mastarr cat /config/setup-token
    ```
 
-3. Enter that one-time pairing token and create an administrator with a password of at least 12 characters. The token file is removed after setup.
+3. Enter that pairing code and create an administrator with a password of at least 12 characters. The code is removed after setup.
 4. In Settings, enter each service URL and API key, enable the connection, test it, and save.
 5. Load root-folder and quality-profile options and save your preferred defaults.
 6. Create household accounts if desired. Other devices only sign in to Mastarr; do not enter the service keys again.
@@ -154,8 +154,8 @@ npm audit --audit-level=moderate
 npm test
 npx playwright install chromium
 npm run test:browser
-docker build -t mastarr:2.0.0 .
-node scripts/docker-smoke.mjs mastarr:2.0.0
+docker build -t mastarr:2.0.1 .
+node scripts/docker-smoke.mjs mastarr:2.0.1
 ```
 
 The tests use temporary configuration and simulated service adapters. They do not touch your real media services. Browser tests cover desktop, phone and tablet layouts, shared settings, role restrictions, escaped metadata, search/add/release workflows and navigation. Docker checks exercise a real non-root container, a read-only application filesystem and configuration/session persistence after restart. The optional complete media stack still requires validation against your actual indexers, storage permissions and engine configuration.
@@ -163,7 +163,7 @@ The tests use temporary configuration and simulated service adapters. They do no
 For a read-only design preview:
 
 ```sh
-docker run --rm -p 127.0.0.1:8765:8686 -e DEMO_MODE=true mastarr:2.0.0
+docker run --rm -p 127.0.0.1:8765:8686 -e DEMO_MODE=true mastarr:2.0.1
 ```
 
 The preview is clearly marked as sample data; writes are disabled. Do not enable demo mode on your production instance.
