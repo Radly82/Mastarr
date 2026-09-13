@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>mastarr</Name>
-  <Repository>ghcr.io/radly82/mastarr:14.0.0</Repository>
+  <Repository>ghcr.io/radly82/mastarr:2.0.0</Repository>
   <Registry>https://github.com/Radly82/Mastarr/pkgs/container/mastarr</Registry>
   <Network>bridge</Network>
   <Shell>sh</Shell>

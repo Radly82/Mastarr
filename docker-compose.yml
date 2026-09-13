@@ -1,7 +1,7 @@
 services:
   mastarr:
     build: .
-    image: mastarr:14.0.0
+    image: mastarr:2.0.0
     container_name: mastarr
     user: '${MASTARR_UID:-1000}:${MASTARR_GID:-1000}'
     ports:
