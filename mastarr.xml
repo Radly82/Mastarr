@@ -2,7 +2,7 @@
 <Container version="2">
   <Name>mastarr</Name>
   <Repository>radly82/mastarr:2.0.0</Repository>
-  <Registry>https://github.com/Radly82/Mastarr/pkgs/container/mastarr</Registry>
+  <Registry>https://hub.docker.com/r/radly82/mastarr</Registry>
   <Network>bridge</Network>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
