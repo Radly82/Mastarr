@@ -6,3 +6,4 @@
 !web/
 !web/**
 !Dockerfile
+!docker-entrypoint.sh

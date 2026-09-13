@@ -1,20 +1,22 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>mastarr</Name>
-  <Repository>radly82/mastarr:2.0.0</Repository>
+  <Repository>radly82/mastarr:latest</Repository>
   <Registry>https://hub.docker.com/r/radly82/mastarr</Registry>
   <Network>bridge</Network>
   <Shell>sh</Shell>
   <Privileged>false</Privileged>
   <Support>https://github.com/Radly82/Mastarr/issues</Support>
   <Project>https://github.com/Radly82/Mastarr</Project>
-  <Overview>Mastarr brings movies, series, downloads and release calendars into one private control room. Connect Sonarr, Radarr and SABnzbd once; configuration and encrypted API keys remain on the server. Other devices only sign in. On first run open the container console and read /config/setup-token to claim your administrator account. Use a trusted LAN or VPN, or an HTTPS reverse proxy with PUBLIC_ORIGIN and SECURE_COOKIES configured. Requires existing media engines; does not replace their indexers or import services. The versioned image is available after its release workflow has been published.</Overview>
+  <Overview>Mastarr brings movies, series, downloads and release calendars into one private control room. Connect Sonarr, Radarr and SABnzbd once; configuration and encrypted API keys remain on the server. Other devices only sign in. On first run open the container console and read /config/setup-token to claim your administrator account. Use a trusted LAN or VPN, or an HTTPS reverse proxy with PUBLIC_ORIGIN and SECURE_COOKIES configured. Requires existing media engines; does not replace their indexers or import services. Set PUID/PGID to match your Unraid user (default 99/100).</Overview>
   <Category>MediaApp:Video</Category>
   <WebUI>http://[IP]:[PORT:8686]/</WebUI>
   <Icon>https://raw.githubusercontent.com/Radly82/Mastarr/main/web/assets/icon-512.png</Icon>
-  <ExtraParams>--user=99:100 --cap-drop=ALL --security-opt=no-new-privileges:true --read-only --tmpfs=/tmp:rw,noexec,nosuid,size=32m</ExtraParams>
+  <ExtraParams>--cap-drop=ALL --cap-add=CHOWN --cap-add=SETUID --cap-add=SETGID --cap-add=DAC_OVERRIDE --security-opt=no-new-privileges:true --tmpfs=/tmp:rw,noexec,nosuid,size=32m</ExtraParams>
   <Config Name="Web UI Port" Target="8686" Default="8686" Mode="tcp" Type="Port" Display="always" Required="true" Mask="false">8686</Config>
   <Config Name="Configuration" Target="/config" Default="/mnt/user/appdata/mastarr" Mode="rw" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/mastarr</Config>
+  <Config Name="User ID" Target="PUID" Default="99" Type="Variable" Display="always" Required="false" Mask="false">99</Config>
+  <Config Name="Group ID" Target="PGID" Default="100" Type="Variable" Display="always" Required="false" Mask="false">100</Config>
   <Config Name="Secure cookies" Target="SECURE_COOKIES" Default="false" Type="Variable" Display="advanced" Required="false" Mask="false">false</Config>
   <Config Name="Public HTTPS origin" Target="PUBLIC_ORIGIN" Default="" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
   <Config Name="Timezone" Target="TZ" Default="UTC" Type="Variable" Display="advanced" Required="false" Mask="false">UTC</Config>

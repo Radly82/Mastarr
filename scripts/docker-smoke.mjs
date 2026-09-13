@@ -16,11 +16,18 @@ try {
     '-d',
     '--name',
     name,
-    '--read-only',
     '--tmpfs',
     '/tmp:rw,noexec,nosuid,size=32m',
     '--cap-drop=ALL',
+    '--cap-add=CHOWN',
+    '--cap-add=SETUID',
+    '--cap-add=SETGID',
+    '--cap-add=DAC_OVERRIDE',
     '--security-opt=no-new-privileges:true',
+    '-e',
+    'PUID=99',
+    '-e',
+    'PGID=100',
     '-p',
     '127.0.0.1::8686',
     '-v',
@@ -45,7 +52,8 @@ try {
     throw new Error('Container did not become ready.');
   };
   await ready();
-  assert.notEqual(docker('exec', name, 'id', '-u'), '0');
+  const nodeUid = docker('exec', name, 'sh', '-c', 'ps -o uid= -p $(pgrep -f server.js | head -1) | tr -d " "');
+  assert.notEqual(nodeUid, '0');
   assert.equal((await fetch(origin + '/api/settings')).status, 401);
   assert.equal((await fetch(origin + '/server.js')).status, 404);
   const setupToken = docker(
@@ -116,7 +124,7 @@ try {
   );
   assert.equal(paths, 'backend,package.json,server.js,web');
   console.log(
-    'Docker checks passed: non-root, read-only root, narrow image contents, authentication, protected keys, persistent configuration and sessions after restart.',
+    'Docker checks passed: PUID/PGID drop, non-root, narrow image contents, authentication, protected keys, persistent configuration and sessions after restart.',
   );
 } finally {
   if (created) docker('rm', '-f', name);

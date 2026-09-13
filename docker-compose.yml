@@ -3,11 +3,12 @@ services:
     build: .
     image: mastarr:2.0.0
     container_name: mastarr
-    user: '${MASTARR_UID:-1000}:${MASTARR_GID:-1000}'
     ports:
       - '${MASTARR_BIND:-0.0.0.0}:${MASTARR_PORT:-8686}:8686'
     environment:
       CONFIG_DIR: /config
+      PUID: '${MASTARR_UID:-99}'
+      PGID: '${MASTARR_GID:-100}'
       SECURE_COOKIES: '${SECURE_COOKIES:-false}'
       PUBLIC_ORIGIN: '${PUBLIC_ORIGIN:-}'
       TZ: '${TZ:-UTC}'
@@ -18,6 +19,11 @@ services:
       - /tmp:rw,noexec,nosuid,size=32m
     cap_drop:
       - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
     security_opt:
       - no-new-privileges:true
     init: true
