@@ -53,7 +53,7 @@ The image defaults to UID/GID 1000:1000. Standard Unraid installations commonly 
 
 ### Use the Unraid template
 
-`mastarr.xml` defines the appdata mount, port 8686 and an unprivileged runtime. Its versioned GHCR image is produced by the **Release Docker** workflow. Until that workflow has successfully published the image, build locally and use `mastarr:2.0.0` as the repository/image instead. For a newly published GHCR package, the owner must also make the package public if anonymous pulls are desired.
+`mastarr.xml` defines the appdata mount, port 8686 and an unprivileged runtime. Its versioned Docker Hub image is produced by the **Release Docker** workflow. Until that workflow has successfully published the image, build locally and use `mastarr:2.0.0` as the repository/image instead. The Docker Hub repository must be public if anonymous pulls are desired.
 
 ### First-run setup
 
