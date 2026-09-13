@@ -37,8 +37,14 @@ class Store {
       CREATE TABLE IF NOT EXISTS operations (id TEXT PRIMARY KEY, digest TEXT NOT NULL, result TEXT, created INTEGER NOT NULL);
       PRAGMA user_version=1;`);
     this.setupPath = path.join(directory, 'setup-token');
-    if (!this.hasUsers() && !fs.existsSync(this.setupPath))
-      fs.writeFileSync(this.setupPath, pairingCode(), { mode: 0o600, flag: 'wx' });
+    if (!this.hasUsers()) {
+      if (!fs.existsSync(this.setupPath)) {
+        fs.writeFileSync(this.setupPath, pairingCode(), { mode: 0o600, flag: 'wx' });
+      } else {
+        const existing = fs.readFileSync(this.setupPath, 'utf8').trim();
+        if (existing.length > 6) fs.writeFileSync(this.setupPath, pairingCode(), { mode: 0o600 });
+      }
+    }
   }
   hasUsers() {
     return this.db.prepare('SELECT COUNT(*) AS count FROM users').get().count > 0;
