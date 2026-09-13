@@ -51,25 +51,30 @@ export function overview(state) {
   const queue = state.activity?.queue || [];
   const hero = recent.find((i) => i.backdrop) || recent[0];
   const used = items.reduce((total, i) => total + (i.size || 0), 0);
+  const monitored = items.filter((i) => i.monitored).length;
   const stats = [
     ['Your collection', number(items.length), `${movies} films · ${series} series`, 'library'],
     [
-      'Ready to enjoy',
+      'Downloaded',
       number(available),
       items.length
-        ? `${Math.round((available / items.length) * 100)}% of your library available`
+        ? `${Math.round((available / items.length) * 100)}% of your library is downloaded and ready`
         : 'Your next story starts here',
       'check',
     ],
     [
-      'In motion',
+      'Downloading',
       number(queue.length),
-      state.activity?.speed
-        ? `${bytes(state.activity.speed)}/s combined speed`
-        : 'All caught up. Nice.',
+      queue.length
+        ? state.activity?.speed
+          ? `${bytes(state.activity.speed)}/s combined speed`
+          : 'In progress'
+        : 'Nothing downloading right now',
       'download',
     ],
-    ['Library footprint', bytes(used), 'Across your connected services', 'disk'],
+    used > 0
+      ? ['Storage used', bytes(used), 'Reported by Sonarr and Radarr', 'disk']
+      : ['Monitored', number(monitored), items.length ? `${Math.round((monitored / items.length) * 100)}% of your library` : 'Track new releases automatically', 'rss'],
   ];
   return `${problems(state.library.errors)}
     <div class="page-heading"><div><span class="eyebrow">EVERYTHING IN ITS PLACE</span><h1>Your media, together<span class="accent">.</span></h1><p>A little less managing. A lot more enjoying.</p></div><button class="button secondary small" data-action="refresh">${icon('refresh')}<span>Refresh</span></button></div>

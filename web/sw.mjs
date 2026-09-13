@@ -1,4 +1,4 @@
-const CACHE = 'mastarr-shell-v2.0.6';
+const CACHE = 'mastarr-shell-v2.0.7';
 const ASSETS = [
   '/',
   '/app.mjs',
