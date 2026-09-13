@@ -1823,6 +1823,12 @@ select {
 .connection-form {
   padding: 24px;
 }
+.toggle-hint {
+  font-size: 10px;
+  color: var(--accent);
+  margin-top: 6px;
+  font-weight: 600;
+}
 .connection-heading {
   display: flex;
   gap: 12px;

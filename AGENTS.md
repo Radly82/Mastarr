@@ -1,6 +1,6 @@
 # Mastarr — guide for coding assistants
 
-Read this first when working in this repository. This describes the implemented architecture, not a proposed rewrite. Reviewed against the 2.0.4 codebase; verify current code and versions before making changes. Use [README.md](README.md) for user-facing installation instructions. Scope work to this Git root; do not apply unrelated sibling projects' architecture, scripts or release procedures to Mastarr.
+Read this first when working in this repository. This describes the implemented architecture, not a proposed rewrite. Reviewed against the 2.0.5 codebase; verify current code and versions before making changes. Use [README.md](README.md) for user-facing installation instructions. Scope work to this Git root; do not apply unrelated sibling projects' architecture, scripts or release procedures to Mastarr.
 
 ## 1. Product and boundaries
 
