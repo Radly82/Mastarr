@@ -52,5 +52,10 @@
     "electron": "44.2.0",
     "electron-builder": "26.15.3",
     "prettier": "3.6.2"
+  },
+  "overrides": {
+    "app-builder-lib": {
+      "@electron/get": "^5.1.0"
+    }
   }
 }
