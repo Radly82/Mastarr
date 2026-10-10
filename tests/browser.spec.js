@@ -285,9 +285,9 @@ test('cinema shell replaces the old offline cache without caching API responses'
     });
     await expect
       .poll(() => page.evaluate(() => caches.keys()))
-      .toEqual(['mastarr-shell-v2.0.9']);
+      .toEqual(['mastarr-shell-v2.0.10']);
     const cached = await page.evaluate(async () => {
-      const cache = await caches.open('mastarr-shell-v2.0.9');
+      const cache = await caches.open('mastarr-shell-v2.0.10');
       return {
         css: await (await cache.match('/styles.css')).text(),
         keys: (await cache.keys()).map((r) => new URL(r.url).pathname),
