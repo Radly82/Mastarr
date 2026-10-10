@@ -39,7 +39,7 @@ async function login(page, username = 'admin') {
   await page.goto(origin);
   await page.getByLabel('Username', { exact: true }).fill(username);
   await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Enter your control room' }).click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.locator('.app-shell')).toBeVisible();
   await page.goto(origin + '/#overview');
   await expect(page.locator('.hero')).toBeVisible();
@@ -51,7 +51,7 @@ test('desktop workflow: shared settings, library, detail, quality and monitoring
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await login(page);
-  await expect(page.getByRole('heading', { name: 'Your media, together.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Your media' })).toBeVisible();
   await page.locator('[data-nav="library"]').click();
   await expect(page.locator('.media-card')).toHaveCount(2);
   await page.getByRole('button', { name: 'View Fixture Movie', exact: true }).click();
@@ -175,7 +175,7 @@ test('first-run pairing creates the administrator and opens shared setup', async
   await page.getByLabel('Pairing code').fill(token);
   await page.getByLabel('Username', { exact: true }).fill('new-admin');
   await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Create your control room' }).click();
+  await page.getByRole('button', { name: 'Create admin account' }).click();
   await expect(page.locator('.connection-form')).toHaveCount(3);
   expect(app.store.hasUsers()).toBe(true);
   expect(fs.existsSync(path.join(configDir, 'setup-token'))).toBe(false);
@@ -352,7 +352,7 @@ test('open access skips sign-in and the settings toggle re-secures the server', 
   await expect(page.getByRole('heading', { name: 'Test Cinema' })).toBeVisible();
   await page.getByLabel('Username', { exact: true }).fill('admin');
   await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByRole('button', { name: 'Enter your control room' }).click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.locator('.app-shell')).toBeVisible();
   expect(app.store.security()).toEqual({ requireAuth: true, loginName: 'Test Cinema' });
 });

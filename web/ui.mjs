@@ -92,7 +92,7 @@ export function toast(message, error = false) {
 }
 export function confirmAction(title, message, label = 'Confirm') {
   const dialog = document.getElementById('confirm-dialog');
-  dialog.innerHTML = `<form method="dialog"><span class="eyebrow">A QUICK CHECK</span><h2>${escape(title)}</h2><p>${escape(message)}</p><div class="dialog-buttons"><button class="button secondary" value="cancel">Cancel</button><button class="button primary" value="confirm">${escape(label)}</button></div></form>`;
+  dialog.innerHTML = `<form method="dialog"><h2>${escape(title)}</h2><p>${escape(message)}</p><div class="dialog-buttons"><button class="button secondary" value="cancel">Cancel</button><button class="button primary" value="confirm">${escape(label)}</button></div></form>`;
   dialog.returnValue = '';
   dialog.showModal();
   return new Promise((resolve) =>
