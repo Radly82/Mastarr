@@ -12,6 +12,7 @@ test.beforeEach(async () => {
   fixture = createFixture();
   app = await createApp({ configDir: directory, transport: fixture.transport });
   await app.store.addUser('admin', password, 'admin', true);
+  app.store.set('security', { requireAuth: true, loginName: '' });
   app.store.set(
     'services',
     Object.fromEntries(
@@ -335,4 +336,23 @@ test('viewer cannot change settings or submit media actions', async ({ page }) =
     data: { services: {} },
   });
   expect(response.status()).toBe(403);
+});
+test('open access skips sign-in and the settings toggle re-secures the server', async ({
+  page,
+}) => {
+  app.store.set('security', { requireAuth: false, loginName: 'Test Cinema' });
+  await page.goto(origin);
+  await expect(page.locator('.app-shell')).toBeVisible();
+  await page.goto(origin + '/#settings');
+  const form = page.locator('form[data-form="security"]');
+  await expect(form.getByLabel('Require sign-in on every device')).not.toBeChecked();
+  await expect(form.getByLabel('Sign-in screen name')).toHaveValue('Test Cinema');
+  await form.getByLabel('Require sign-in on every device').check();
+  await form.getByRole('button', { name: 'Save sign-in settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Test Cinema' })).toBeVisible();
+  await page.getByLabel('Username', { exact: true }).fill('admin');
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Enter your control room' }).click();
+  await expect(page.locator('.app-shell')).toBeVisible();
+  expect(app.store.security()).toEqual({ requireAuth: true, loginName: 'Test Cinema' });
 });

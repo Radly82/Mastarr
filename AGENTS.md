@@ -65,9 +65,9 @@ Runtime is **Node.js 24**, including built-in `node:sqlite`, HTTP, crypto and fi
 
 1. `createApp(options)` creates a `Store` and `Services`. It returns `{ server, store, services, close }`; callers bind the server themselves. The executable entry point binds the configured host/port and handles shutdown.
 2. `Store` opens its database and encryption key. With no accounts, it creates a restricted `setup-token` file.
-3. Browser `boot()` calls `GET /api/auth/session`. An unclaimed instance shows pairing/account creation; otherwise an unauthenticated client sees sign-in.
+3. Browser `boot()` calls `GET /api/auth/session`. An unclaimed instance shows pairing/account creation. After setup, sign-in is optional: the encrypted `security` setting (`requireAuth`, default `false`) decides whether an unauthenticated client sees sign-in or an implicit local admin session (`Guest` username, fixed `local` CSRF value; same-origin and role checks still apply). A real cookie session always takes precedence over the implicit one.
 4. Setup requires the one-time token plus a valid username/password. Successful setup removes the token file. Login creates a persisted session.
-5. The session token is in an HttpOnly cookie. The CSRF token and limited user information are returned to the UI. Authenticated boot renders the shell and fetches library, health, activity, calendar and events.
+5. The session token is in an HttpOnly cookie. The CSRF token and limited user information are returned to the UI. Authenticated boot renders the shell and fetches library, health, activity, calendar and events. Admins re-secure the server or rename the sign-in screen through `POST /api/security` (`requireAuth`, `loginName` shown as the sign-in heading).
 
 ### Search -> add -> download -> import
 
@@ -106,6 +106,7 @@ Read `server.js` for precise schemas and method checks. These are Mastarr routes
 | `GET /api/media/:service/:id`, `/api/art/:key` | Authenticated details and registered/proxied artwork. |
 | `GET /api/options/:service`, `/api/media/:service/:id/releases`, `/api/queue/:service/:id/import` | Operator/admin option, release and import reads. |
 | `GET/POST /api/settings`, `POST /api/settings/import`, `POST /api/connections/:service/test`, `GET/POST /api/users` | Admin-only shared configuration and account management. |
+| `POST /api/security` | Admin-only sign-in requirement toggle and sign-in screen name. |
 | `POST /api/media/:service` | Operator/admin add using an external media ID. |
 | `POST /api/media/:service/:id` and `/command`, `/grab`, `/episode`, `/remove` suffixes | Operator/admin updates and named actions; episode monitoring is Sonarr-only. |
 | `POST /api/queue/:service/:id`, `/api/queue/:service/:id/import`, `/api/bulk` | Operator/admin queue actions, engine imports and batch operations. |

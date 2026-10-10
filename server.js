@@ -163,12 +163,17 @@ async function createApp(options = {}) {
         .map((v) => v.trim())
         .find((v) => v.startsWith(`${cookieName}=`))
         ?.slice(cookieName.length + 1);
-      const session = demo
+      const security = store.security();
+      let session = demo
         ? { id: 'demo', username: 'Preview', role: 'viewer', csrf: 'demo' }
         : store.session(raw);
+      if (!demo && !session && !security.requireAuth && store.hasUsers())
+        session = { id: 'local', username: 'Guest', role: 'admin', csrf: 'local' };
       if (route === '/api/auth/session' && req.method === 'GET')
         return json(res, 200, {
           setupRequired: !demo && !store.hasUsers(),
+          authRequired: security.requireAuth,
+          loginName: security.loginName || '',
           user: session ? { id: session.id, username: session.username, role: session.role } : null,
           csrf: session?.csrf,
           demo,
@@ -238,6 +243,24 @@ async function createApp(options = {}) {
         store.set('services', settings);
         services.invalidate();
         store.event('settings', 'Updated service connections', session.username);
+        return json(res, 200, store.publicSettings());
+      }
+      if (route === '/api/security' && req.method === 'POST') {
+        requireRole('admin');
+        const body = await readBody(req);
+        if (
+          !object(body) ||
+          typeof body.requireAuth !== 'boolean' ||
+          typeof body.loginName !== 'string' ||
+          body.loginName.trim().length > 60
+        )
+          throw fail('Invalid sign-in settings.');
+        store.set('security', { requireAuth: body.requireAuth, loginName: body.loginName.trim() });
+        store.event(
+          'security',
+          body.requireAuth ? 'Sign-in requirement enabled' : 'Sign-in requirement disabled',
+          session.username,
+        );
         return json(res, 200, store.publicSettings());
       }
       if (route === '/api/settings/import' && req.method === 'POST') {

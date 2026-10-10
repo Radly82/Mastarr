@@ -138,8 +138,98 @@ test('oversized requests are rejected', async () => {
 test('logout invalidates the persisted session', async () => {
   const res = await post('/api/auth/logout', {}, { Cookie: cookie, 'X-CSRF-Token': csrf });
   assert.equal(res.status, 200);
-  assert.equal(
-    (await fetch(origin + '/api/settings', { headers: { Cookie: cookie } })).status,
-    401,
+  const session = await (
+    await fetch(origin + '/api/auth/session', { headers: { Cookie: cookie } })
+  ).json();
+  assert.equal(session.user.username, 'Guest');
+});
+test('sign-in access is open after setup, and can be re-secured by an admin', async () => {
+  let session = await (await fetch(origin + '/api/auth/session')).json();
+  assert.equal(session.authRequired, false);
+  assert.equal(session.user.username, 'Guest');
+  assert.equal(session.user.role, 'admin');
+  assert.equal(session.csrf, 'local');
+  assert.equal((await fetch(origin + '/api/settings')).status, 200);
+  assert.equal((await fetch(origin + '/api/library')).status, 200);
+
+  const localHeaders = { 'X-CSRF-Token': 'local' };
+  for (const body of [
+    null,
+    { requireAuth: 'yes', loginName: '' },
+    { requireAuth: true, loginName: 5 },
+    { requireAuth: true, loginName: 'x'.repeat(61) },
+  ]) {
+    assert.equal((await post('/api/security', body, localHeaders)).status, 400);
+  }
+
+  await post(
+    '/api/users',
+    { username: 'helper', password: 'test-password-long', role: 'viewer' },
+    localHeaders,
   );
+  const viewerLogin = await post('/api/auth/login', {
+    username: 'helper',
+    password: 'test-password-long',
+  });
+  const viewerHeaders = {
+    Cookie: viewerLogin.headers.get('set-cookie').split(';')[0],
+    'X-CSRF-Token': (await viewerLogin.json()).csrf,
+  };
+  assert.equal(
+    (await post('/api/security', { requireAuth: true, loginName: '' }, viewerHeaders)).status,
+    403,
+  );
+
+  assert.equal(
+    (
+      await post('/api/security', { requireAuth: true, loginName: '' }, {
+        Origin: 'https://untrusted.invalid',
+      })
+    ).status,
+    403,
+  );
+
+  const resecured = await post(
+    '/api/security',
+    { requireAuth: true, loginName: '' },
+    localHeaders,
+  );
+  assert.equal(resecured.status, 200);
+  assert.equal((await fetch(origin + '/api/settings')).status, 401);
+  session = await (await fetch(origin + '/api/auth/session')).json();
+  assert.equal(session.authRequired, true);
+  assert.equal(session.user, null);
+  assert.equal(session.loginName, '');
+
+  const login = await post('/api/auth/login', { username: 'admin', password: 'test-password-long' });
+  assert.equal(login.status, 200);
+  const admin = login.headers.get('set-cookie').split(';')[0];
+  const opened = await post(
+    '/api/security',
+    { requireAuth: false, loginName: 'Test Cinema' },
+    { Cookie: admin, 'X-CSRF-Token': (await login.json()).csrf },
+  );
+  assert.equal(opened.status, 200);
+  assert.equal((await opened.json()).security.requireAuth, false);
+
+  session = await (await fetch(origin + '/api/auth/session')).json();
+  assert.equal(session.authRequired, false);
+  assert.equal(session.loginName, 'Test Cinema');
+  assert.equal(session.user.username, 'Guest');
+});
+test('an unclaimed server stays locked behind setup even with open access', async () => {
+  const freshDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mastarr-fresh-'));
+  const fresh = await createApp({ configDir: freshDir });
+  try {
+    await new Promise((resolve) => fresh.server.listen(0, '127.0.0.1', resolve));
+    const freshOrigin = `http://127.0.0.1:${fresh.server.address().port}`;
+    const session = await (await fetch(freshOrigin + '/api/auth/session')).json();
+    assert.equal(session.setupRequired, true);
+    assert.equal(session.authRequired, false);
+    assert.equal(session.user, null);
+    assert.equal((await fetch(freshOrigin + '/api/settings')).status, 401);
+  } finally {
+    await fresh.close();
+    fs.rmSync(freshDir, { recursive: true, force: true });
+  }
 });

@@ -69,6 +69,10 @@ The image defaults to UID/GID 1000:1000. Standard Unraid installations commonly 
 5. Load root-folder and quality-profile options and save your preferred defaults.
 6. Create household accounts if desired. Other devices only sign in to Mastarr; do not enter the service keys again.
 
+### Sign-in access
+
+After setup, Mastarr is open by default: anyone who can reach the server can use it with full access, and no login screen appears. To require a username and password on every device, open **Settings → Sign-in access**, enable **Require sign-in on every device**, and save. Household accounts created in Settings then apply. You can also set a **Sign-in screen name** — any text you like, shown as the heading on the sign-in screen (leave blank for the default greeting). Only keep sign-in off on a trusted network where every device that can reach the server should have access.
+
 The URLs must be reachable **from the container**. `localhost` inside Mastarr refers to Mastarr itself. Use service DNS names on a shared Docker network or your server's LAN address. Sonarr/Radarr use `X-Api-Key` headers. SABnzbd requires its key in the server-to-server request; Mastarr does not expose that request to browsers or log its URL.
 
 ### Optional: deploy the engines with Mastarr

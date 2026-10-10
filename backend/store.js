@@ -75,6 +75,9 @@ class Store {
   services() {
     return this.get('services', {});
   }
+  security() {
+    return this.get('security', { requireAuth: false, loginName: '' });
+  }
   publicSettings() {
     const services = this.services();
     return {
@@ -96,6 +99,7 @@ class Store {
         }),
       ),
       preferences: this.get('preferences', { name: 'Mastarr', refreshSeconds: 15 }),
+      security: this.security(),
       legacyAvailable: fs.existsSync(path.join(this.directory, 'settings.json')),
     };
   }

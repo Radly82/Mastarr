@@ -84,8 +84,9 @@ async function api(route, body, options = {}) {
     .catch(() => ({ error: 'The server returned an unexpected response.' }));
   if (!response.ok) {
     if (response.status === 401 && !route.includes('/auth/')) {
-      state.session.user = null;
-      renderAuth();
+      const fresh = await api('/api/auth/session').catch(() => null);
+      state.session = fresh || { ...state.session, user: null };
+      if (!state.session.user) renderAuth();
     }
     throw new Error(data.error || 'The request could not be completed.');
   }
@@ -104,7 +105,7 @@ theme();
 function renderAuth(error = '') {
   clearTimeout(pollTimer);
   const setup = state.session?.setupRequired;
-  root.innerHTML = `<main id="main" class="auth-page"><section class="auth-art"><img src="/assets/landscape.svg" alt="" class="auth-landscape"><a class="brand" href="/"><img src="/assets/mark.svg" alt="" width="38" height="38"><span>mastarr<span class="brand-dot">.</span></span></a><div class="auth-manifesto"><span class="eyebrow">YOUR MEDIA. YOUR SPACE.</span><h1>All your stories.<br>One beautiful<br><span>home.</span></h1><p>Movies, series, and everything in between.<br>Finally together. Entirely yours.</p><div class="auth-features"><span>${icon('shield')}Private by design</span><span>${icon('library')}One shared library</span></div></div><div class="auth-art-footer">SELF-HOSTED <span>·</span> NO CLOUD REQUIRED</div></section><section class="auth-form-wrap"><div class="auth-mobile-brand"><img src="/assets/mark.svg" alt="Mastarr" width="42" height="42"></div><div class="auth-form-content"><span class="eyebrow">${setup ? 'A FRESH START' : 'YOUR CONTROL ROOM IS WAITING'}</span><h2>${setup ? 'Make yourself at home.' : 'Good to see you again.'}</h2><p>${setup ? 'Claim your server, then connect your services. You only need to do this once.' : 'Sign in to your private media collection.'}</p><form data-form="auth" class="auth-form">${setup ? `<label>Pairing code<input name="token" type="text" autocomplete="off" required placeholder="6-character code" pattern="[A-Za-z0-9]{6}" maxlength="6" class="pairing-code-input"></label><details class="pairing-help"><summary>Where do I find my pairing code?</summary><p><strong>In Unraid:</strong> Click the Mastarr container icon → <strong>Logs</strong>. Your code is printed at the top of the log.</p><p><strong>Or in a terminal:</strong></p><code>docker exec mastarr cat /config/setup-token</code><p>This one-time code protects your unclaimed server. It is removed after setup.</p></details>` : ''}<label>Username<input name="username" autocomplete="username" pattern="[A-Za-z0-9_.\\-]{3,32}" minlength="3" maxlength="32" required placeholder="${setup ? 'Choose a username' : 'Your username'}"></label><label>Password<input name="password" type="password" autocomplete="${setup ? 'new-password' : 'current-password'}" minlength="12" maxlength="256" required placeholder="${setup ? 'At least 12 characters' : 'Your password'}"></label><div class="form-result error" role="alert">${e(error)}</div><button class="button primary auth-submit" type="submit">${setup ? 'Create your control room' : 'Enter your control room'}${icon('arrow')}</button></form><div class="auth-note">${icon('shield')}Your account belongs to this server.<br>No third-party account required.</div></div><span class="auth-footer">Mastarr ${e(state.session?.version || '14.0.0')} <span>·</span> Your media, together.</span></section></main>`;
+  root.innerHTML = `<main id="main" class="auth-page"><section class="auth-art"><img src="/assets/landscape.svg" alt="" class="auth-landscape"><a class="brand" href="/"><img src="/assets/mark.svg" alt="" width="38" height="38"><span>mastarr<span class="brand-dot">.</span></span></a><div class="auth-manifesto"><span class="eyebrow">YOUR MEDIA. YOUR SPACE.</span><h1>All your stories.<br>One beautiful<br><span>home.</span></h1><p>Movies, series, and everything in between.<br>Finally together. Entirely yours.</p><div class="auth-features"><span>${icon('shield')}Private by design</span><span>${icon('library')}One shared library</span></div></div><div class="auth-art-footer">SELF-HOSTED <span>·</span> NO CLOUD REQUIRED</div></section><section class="auth-form-wrap"><div class="auth-mobile-brand"><img src="/assets/mark.svg" alt="Mastarr" width="42" height="42"></div><div class="auth-form-content"><span class="eyebrow">${setup ? 'A FRESH START' : 'YOUR CONTROL ROOM IS WAITING'}</span><h2>${setup ? 'Make yourself at home.' : state.session?.loginName ? e(state.session.loginName) : 'Good to see you again.'}</h2><p>${setup ? 'Claim your server, then connect your services. You only need to do this once.' : 'Sign in to your private media collection.'}</p><form data-form="auth" class="auth-form">${setup ? `<label>Pairing code<input name="token" type="text" autocomplete="off" required placeholder="6-character code" pattern="[A-Za-z0-9]{6}" maxlength="6" class="pairing-code-input"></label><details class="pairing-help"><summary>Where do I find my pairing code?</summary><p><strong>In Unraid:</strong> Click the Mastarr container icon → <strong>Logs</strong>. Your code is printed at the top of the log.</p><p><strong>Or in a terminal:</strong></p><code>docker exec mastarr cat /config/setup-token</code><p>This one-time code protects your unclaimed server. It is removed after setup.</p></details>` : ''}<label>Username<input name="username" autocomplete="username" pattern="[A-Za-z0-9_.\\-]{3,32}" minlength="3" maxlength="32" required placeholder="${setup ? 'Choose a username' : 'Your username'}"></label><label>Password<input name="password" type="password" autocomplete="${setup ? 'new-password' : 'current-password'}" minlength="12" maxlength="256" required placeholder="${setup ? 'At least 12 characters' : 'Your password'}"></label><div class="form-result error" role="alert">${e(error)}</div><button class="button primary auth-submit" type="submit">${setup ? 'Create your control room' : 'Enter your control room'}${icon('arrow')}</button></form><div class="auth-note">${icon('shield')}Your account belongs to this server.<br>No third-party account required.</div></div><span class="auth-footer">Mastarr ${e(state.session?.version || '14.0.0')} <span>·</span> Your media, together.</span></section></main>`;
 }
 function renderShell() {
   root.innerHTML = `<div class="app-shell"><aside class="sidebar" id="sidebar"><a href="#overview" class="brand"><img src="/assets/mark.svg" alt="" width="34" height="34"><span>mastarr<span class="brand-dot">.</span></span></a><span class="nav-label">YOUR WORKSPACE</span><nav aria-label="Main navigation">${views
@@ -362,6 +363,19 @@ async function formSubmit(form) {
       toast('Account created.');
       form.reset();
       await loadSettings();
+    } else if (kind === 'security') {
+      state.settings = await api('/api/security', {
+        requireAuth: data.requireAuth === 'on',
+        loginName: String(data.loginName || ''),
+      });
+      renderMain();
+      const savedForm = document.querySelector('form[data-form="security"]');
+      formStatus(savedForm, 'Sign-in settings saved.');
+      const fresh = await api('/api/auth/session').catch(() => null);
+      if (fresh && !fresh.user) {
+        state.session = fresh;
+        renderAuth('Sign-in is now required. Sign in with your account.');
+      }
     } else if (kind === 'password') {
       await api('/api/auth/password', data);
       state.session.user = null;
@@ -479,10 +493,10 @@ async function action(button) {
     );
     if (confirmed && !state.session.demo) {
       await api('/api/auth/logout', {});
-      state.session.user = null;
       state.library = null;
       state.settings = null;
-      renderAuth();
+      state.searchResults = null;
+      await boot();
     }
     return;
   }
