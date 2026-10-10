@@ -86,7 +86,6 @@ function createFixture() {
       return { status: true };
     }
     if (pathname === '/api/v3/system/status') return { version: sonarr ? '4.0.15' : '5.25.0' };
-    if (pathname === '/api/v3/health') return [];
     if (pathname === '/api/v3/diskspace')
       return [{ label: 'Media', freeSpace: 100000000000, totalSpace: 1000000000000 }];
     if (pathname === '/api/v3/rootfolder')
@@ -123,7 +122,13 @@ function createFixture() {
               hasFile: false,
             },
           ]
-        : [{ ...movie, digitalRelease: new Date(Date.now() + 86400000).toISOString() }];
+        : [
+            {
+              ...movie,
+              digitalRelease: new Date(Date.now() - 180 * 86400000).toISOString(),
+              physicalRelease: new Date(Date.now() + 86400000).toISOString(),
+            },
+          ];
     if (pathname === '/api/v3/queue')
       return {
         records: sonarr

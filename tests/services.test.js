@@ -78,6 +78,18 @@ test('unsafe service URLs and image destinations are rejected', () => {
   assert.equal(service.art('radarr', { url: '/MediaCover/../../settings.json' }), '');
   assert.equal(service.art('radarr', { url: 'javascript:alert(1)' }), '');
 });
+test('the artwork registry refreshes known entries and bounds its size', () => {
+  const service = new Services(store);
+  const key = (url) => service.art('radarr', { url }).slice('/api/art/'.length);
+  const kept = key('https://image.tmdb.org/kept.jpg');
+  for (let i = 0; i < 49999; i++) key(`https://image.tmdb.org/filler-${i}.jpg`);
+  assert.equal(service.artwork.size, 50000);
+  assert.ok(service.artwork.has(kept));
+  key('https://image.tmdb.org/kept.jpg');
+  key('https://image.tmdb.org/newest.jpg');
+  assert.equal(service.artwork.size, 50000);
+  assert.ok(service.artwork.has(kept));
+});
 test('redirects are not followed and credentials do not reach another origin', async () => {
   const http = require('node:http');
   let destinationCalls = 0;

@@ -113,7 +113,6 @@ function data() {
         status: 'online',
         version: 'Preview',
         latency: 12 + i * 7,
-        warnings: [],
         disks: [{ label: 'Media', freeSpace: 3400000000000, totalSpace: 12000000000000 }],
       })),
     },

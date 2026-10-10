@@ -265,7 +265,8 @@ class Services {
       }
     }
     const key = crypto.createHash('sha256').update(JSON.stringify(record)).digest('hex');
-    if (this.artwork.size > 10000) this.artwork.delete(this.artwork.keys().next().value);
+    this.artwork.delete(key);
+    if (this.artwork.size >= 50000) this.artwork.delete(this.artwork.keys().next().value);
     this.artwork.set(key, record);
     return `/api/art/${key}`;
   }
@@ -388,17 +389,15 @@ class Services {
       const started = Date.now();
       if (name === 'sabnzbd') {
         const status = await this.call(name, '/api?mode=version&output=json');
-        return { version: status.version, latency: Date.now() - started, warnings: [] };
+        return { version: status.version, latency: Date.now() - started };
       }
-      const [status, warnings, disks] = await Promise.all([
+      const [status, disks] = await Promise.all([
         this.call(name, '/api/v3/system/status'),
-        this.call(name, '/api/v3/health'),
         this.call(name, '/api/v3/diskspace'),
       ]);
       return {
         version: status.version,
         latency: Date.now() - started,
-        warnings: warnings.map((w) => ({ type: w.type, message: w.message })),
         disks: disks.map((d) => ({
           label: d.label || d.type || 'Storage',
           freeSpace: numeric(d.freeSpace),
@@ -466,6 +465,12 @@ class Services {
           ['sonarr', 'radarr'],
         );
         const library = await this.library();
+        const from = Date.parse(start);
+        const until = Date.parse(end) + 86400000;
+        const inRange = (value) => {
+          const time = Date.parse(value);
+          return Number.isFinite(time) && time >= from && time < until;
+        };
         return {
           items: result.values
             .flatMap(({ service, data }) =>
@@ -474,21 +479,27 @@ class Services {
                 const media = series
                   ? library.items.find((m) => m.service === service && m.id === item.seriesId)
                   : this.media(service, item);
+                const candidates = series
+                  ? []
+                  : [item.digitalRelease, item.physicalRelease, item.inCinemas]
+                      .filter(Boolean)
+                      .sort((a, b) => a.localeCompare(b));
+                const date = series
+                  ? item.airDateUtc || item.airDate
+                  : candidates.find(inRange) || candidates[0];
                 return {
                   ...media,
                   eventId: `${service}:${item.id}`,
-                  date: series
-                    ? item.airDateUtc || item.airDate
-                    : item.digitalRelease || item.physicalRelease || item.inCinemas,
+                  date,
                   episodeTitle: series ? item.title : '',
                   episodeNumber: numeric(item.episodeNumber),
                   seasonNumber: numeric(item.seasonNumber),
                   hasFile: item.hasFile,
                   releaseType: series
                     ? 'Episode'
-                    : item.digitalRelease
+                    : date === item.digitalRelease
                       ? 'Digital release'
-                      : item.physicalRelease
+                      : date === item.physicalRelease
                         ? 'Physical release'
                         : 'In cinemas',
                 };

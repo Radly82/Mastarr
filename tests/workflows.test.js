@@ -48,6 +48,14 @@ test('library, combined calendar and deduplicated activity', async () => {
   assert.equal(library.items.length, 2);
   const calendar = await (await get('/api/calendar')).json();
   assert.deepEqual(calendar.items.map((i) => i.service).sort(), ['radarr', 'sonarr']);
+  const movieEntry = calendar.items.find((i) => i.service === 'radarr');
+  assert.equal(movieEntry.releaseType, 'Physical release');
+  const from = Date.parse(new Date().toISOString().slice(0, 10));
+  const movieTime = Date.parse(movieEntry.date);
+  assert.ok(
+    movieTime >= from && movieTime < from + 31 * 86400000,
+    'calendar movie date must fall inside the requested range',
+  );
   const activity = await (await get('/api/activity')).json();
   assert.equal(activity.queue.length, 1);
   assert.equal(activity.queue[0].client.id, 'download-1');

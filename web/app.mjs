@@ -58,6 +58,7 @@ let detailVersion = 0,
   searchTimer,
   pollTimer;
 const views = ['overview', 'library', 'discover', 'activity', 'calendar', 'settings'];
+const macKeyboard = /Mac|iPhone|iPad/.test(String(navigator.platform || navigator.userAgent));
 const requestId = () =>
   crypto.randomUUID?.() ||
   Array.from(crypto.getRandomValues(new Uint8Array(24)), (n) =>
@@ -116,7 +117,7 @@ function renderShell() {
     )
     .join(
       '',
-    )}</nav><div class="sidebar-divider"></div><span class="nav-label">YOUR SYSTEM</span><nav aria-label="System navigation"><a href="#settings" data-nav="settings">${icon('settings')}<span>${state.session.user.role === 'admin' ? 'Settings' : 'Account'}</span></a><button data-action="health">${icon('activity')}<span>System health</span><span class="connection-dot" id="system-dot"></span></button></nav><div class="sidebar-bottom"><div class="server-status"><span class="connection-dot"></span><div><strong>Your private instance</strong><span>${state.session.demo ? 'READ-ONLY PREVIEW' : 'SELF-HOSTED & CONNECTED'}</span></div>${icon('shield')}</div><div class="sidebar-version">Mastarr ${e(state.session.version)}<span>Made for your collection</span></div></div></aside><button class="sidebar-scrim" data-action="menu" aria-label="Close navigation"></button><div class="workspace"><header class="topbar"><div class="topbar-location"><button class="icon-button mobile-menu" data-action="menu" aria-label="Open navigation" aria-expanded="false">${icon('menu')}</button><span class="workspace-label">Workspace</span>${icon('chevron')}<strong id="breadcrumb">Overview</strong></div><label class="global-search">${icon('search')}<input id="global-search" type="search" placeholder="Search your next story…" aria-label="Search all movies and series" autocomplete="off"><kbd>⌘ K</kbd></label><div class="topbar-actions"><button class="icon-button" data-action="theme" aria-label="Toggle light and dark theme">${icon('sun')}</button><button class="icon-button notification-button" data-action="health" aria-label="Connection health and notifications">${icon('bell')}<span id="notification-dot" hidden></span></button><span class="topbar-divider"></span><button class="avatar" data-action="account-menu" aria-label="Account and sign out">${e(state.session.user.username.slice(0, 1).toUpperCase())}</button></div></header>${state.session.demo ? '<div class="demo-banner"><span class="preview-label">PREVIEW</span>Sample collection · Read-only · No real services connected<a href="#settings">About this preview</a></div>' : ''}<main id="main" tabindex="-1" class="main-content"></main><footer class="app-footer"><span>${icon('shield')}Your library. Your server. Your rules.</span><span id="sync-status">Connecting…</span></footer></div></div>`;
+    )}</nav><div class="sidebar-divider"></div><span class="nav-label">YOUR SYSTEM</span><nav aria-label="System navigation"><a href="#settings" data-nav="settings">${icon('settings')}<span>${state.session.user.role === 'admin' ? 'Settings' : 'Account'}</span></a><button data-action="health">${icon('activity')}<span>System health</span><span class="connection-dot" id="system-dot"></span></button></nav><div class="sidebar-bottom"><div class="server-status"><span class="connection-dot"></span><div><strong>Your private instance</strong><span>${state.session.demo ? 'READ-ONLY PREVIEW' : 'SELF-HOSTED & CONNECTED'}</span></div>${icon('shield')}</div><div class="sidebar-version">Mastarr ${e(state.session.version)}<span>Made for your collection</span></div></div></aside><button class="sidebar-scrim" data-action="menu" aria-label="Close navigation"></button><div class="workspace"><header class="topbar"><div class="topbar-location"><button class="icon-button mobile-menu" data-action="menu" aria-label="Open navigation" aria-expanded="false">${icon('menu')}</button><span class="workspace-label">Workspace</span>${icon('chevron')}<strong id="breadcrumb">Overview</strong></div><label class="global-search">${icon('search')}<input id="global-search" type="search" placeholder="Search for movies or shows" aria-label="Search all movies and series" autocomplete="off"><kbd>${macKeyboard ? '⌘ K' : 'Ctrl K'}</kbd></label><div class="topbar-actions"><button class="icon-button" data-action="theme" aria-label="Toggle light and dark theme">${icon('sun')}</button><button class="icon-button notification-button" data-action="health" aria-label="Connection health and notifications">${icon('bell')}<span id="notification-dot" hidden></span></button><span class="topbar-divider"></span><button class="avatar" data-action="account-menu" aria-label="Account and sign out">${e(state.session.user.username.slice(0, 1).toUpperCase())}</button></div></header>${state.session.demo ? '<div class="demo-banner"><span class="preview-label">PREVIEW</span>Sample collection · Read-only · No real services connected<a href="#settings">About this preview</a></div>' : ''}<main id="main" tabindex="-1" class="main-content"></main><footer class="app-footer"><span>${icon('shield')}Your library. Your server. Your rules.</span><span id="sync-status">Connecting…</span></footer></div></div>`;
   renderMain();
 }
 function renderMain() {
@@ -143,7 +144,7 @@ function renderMain() {
   if (crumb) crumb.textContent = state.view[0].toUpperCase() + state.view.slice(1);
   document.title = `${crumb?.textContent || 'Mastarr'} — Mastarr`;
   document.getElementById('nav-downloads').textContent = state.activity?.queue.length || 0;
-  const offline = state.health?.services.some((s) => s.status === 'offline' || s.warnings?.length);
+  const offline = state.health?.services.some((s) => s.status === 'offline');
   document.getElementById('system-dot').classList.toggle('warning', !!offline);
   document.getElementById('notification-dot').hidden = !offline;
   const sync = document.getElementById('sync-status');
@@ -501,16 +502,20 @@ async function action(button) {
     return;
   }
   if (action === 'health') {
+    const label = (s) => (s.name === 'sabnzbd' ? 'SABnzbd' : s.name === 'sonarr' ? 'Sonarr' : 'Radarr');
     const content = (state.health?.services || [])
-      .map(
-        (s) =>
-          `${s.name}: ${s.status}${s.error ? ` — ${s.error}` : ''}${s.warnings?.length ? ` — ${s.warnings.map((w) => w.message).join('; ')}` : ''}`,
+      .map((s) =>
+        s.status === 'online'
+          ? `${label(s)} — Connected and working`
+          : s.status === 'unconfigured'
+            ? `${label(s)} — Not connected yet`
+            : `${label(s)} — Can't reach it right now`,
       )
       .join('\n');
     if (
       await confirmAction(
-        'Your system at a glance',
-        content || 'Health checks are loading.',
+        'Your connections',
+        content || 'Checking your services…',
         'Open settings',
       )
     )
